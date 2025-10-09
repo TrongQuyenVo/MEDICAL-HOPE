@@ -1,26 +1,77 @@
 import { motion } from 'framer-motion';
 import { Calendar, Stethoscope, Gift, HandHeart, MessageCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuthStore } from '@/stores/authStore';
+import toast from 'react-hot-toast';
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const [appointments, setAppointments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [stats, setStats] = useState({ upcoming: 0, history: 0, support: 0, messages: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+        }
+
+        const [appointmentsRes, notificationsRes] = await Promise.all([
+          axios.get('/api/appointments', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/notifications', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        const appointmentsData = Array.isArray(appointmentsRes.data.appointments)
+          ? appointmentsRes.data.appointments
+          : [];
+        const notificationsData = Array.isArray(notificationsRes.data.notifications)
+          ? notificationsRes.data.notifications
+          : [];
+
+        setAppointments(appointmentsData);
+        setNotifications(notificationsData);
+        setStats({
+          upcoming: appointmentsData.filter(
+            (apt) => new Date(apt.scheduledTime) > new Date()
+          ).length,
+          history: appointmentsData.length,
+          support: notificationsData.filter((n) => n.type === 'donation').length,
+          messages: notificationsData.filter((n) => n.type === 'system' || n.type === 'message').length,
+        });
+      } catch (error) {
+        console.error('Lỗi tải dữ liệu dashboard:', error);
+        setError(error.response?.data?.message || 'Không thể tải dữ liệu dashboard');
+        toast.error(error.response?.data?.message || 'Không thể tải dữ liệu dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const quickActions = [
     {
       title: 'Đặt lịch khám',
-      description: 'Tìm và đặt lịch với bác sĩ tình nguyện',
+      description: 'Với bác sĩ tình nguyện',
       icon: Calendar,
       action: () => navigate('/appointments'),
       color: 'bg-gradient-primary',
     },
     {
       title: 'Tìm bác sĩ',
-      description: 'Xem danh sách bác sĩ chuyên khoa',
+      description: 'Danh sách bác sĩ chuyên khoa',
       icon: Stethoscope,
       action: () => navigate('/doctors'),
       color: 'bg-gradient-secondary',
@@ -41,47 +92,21 @@ export default function PatientDashboard() {
     },
   ];
 
-  const upcomingAppointments = [
-    {
-      id: 1,
-      doctor: 'BS. Nguyễn Văn A',
-      specialty: 'Tim mạch',
-      time: '14:00 - 25/12/2024',
-      status: 'confirmed',
-    },
-    {
-      id: 2,
-      doctor: 'BS. Trần Thị B',
-      specialty: 'Da liễu',
-      time: '10:00 - 28/12/2024',
-      status: 'scheduled',
-    },
-  ];
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'appointment',
-      message: 'Lịch hẹn với BS. Nguyễn Văn A đã được xác nhận',
-      time: '2 giờ trước',
-    },
-    {
-      id: 2,
-      type: 'donation',
-      message: 'Bạn đã nhận được 500,000 VNĐ hỗ trợ y tế',
-      time: '1 ngày trước',
-    },
-    {
-      id: 3,
-      type: 'system',
-      message: 'Hồ sơ y tế của bạn đã được cập nhật',
-      time: '3 ngày trước',
-    },
-  ];
+  if (error) {
+    return (
+      <Card className="healthcare-card">
+        <CardHeader>
+          <CardTitle className="healthcare-heading">Có lỗi xảy ra</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-destructive">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      {/* Stats Overview */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -94,10 +119,8 @@ export default function PatientDashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">2</div>
-              <p className="text-xs text-muted-foreground">
-                +1 từ tháng trước
-              </p>
+              <div className="text-2xl font-bold text-primary">{stats.upcoming}</div>
+              <p className="text-xs text-muted-foreground">Các cuộc hẹn trong tuần tới</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -113,10 +136,8 @@ export default function PatientDashboard() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">12</div>
-              <p className="text-xs text-muted-foreground">
-                Tổng số lần khám
-              </p>
+              <div className="text-2xl font-bold text-primary">{stats.history}</div>
+              <p className="text-xs text-muted-foreground">Tổng số lần khám</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -132,10 +153,8 @@ export default function PatientDashboard() {
               <HandHeart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">2.5M</div>
-              <p className="text-xs text-muted-foreground">
-                VNĐ trong năm nay
-              </p>
+              <div className="text-2xl font-bold text-success">{stats.support}</div>
+              <p className="text-xs text-muted-foreground">VNĐ trong năm nay</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -151,16 +170,13 @@ export default function PatientDashboard() {
               <MessageCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">3</div>
-              <p className="text-xs text-muted-foreground">
-                Từ bác sĩ và hệ thống
-              </p>
+              <div className="text-2xl font-bold text-primary">{stats.messages}</div>
+              <p className="text-xs text-muted-foreground">Từ bác sĩ và hệ thống</p>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Quick Actions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -190,9 +206,7 @@ export default function PatientDashboard() {
                     </div>
                     <div>
                       <div className="font-medium">{action.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {action.description}
-                      </div>
+                      <div className="text-xs text-muted-foreground">{action.description}</div>
                     </div>
                   </Button>
                 </motion.div>
@@ -203,7 +217,6 @@ export default function PatientDashboard() {
       </motion.div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Upcoming Appointments */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -215,31 +228,41 @@ export default function PatientDashboard() {
               <CardDescription>Các cuộc hẹn trong tuần tới</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {upcomingAppointments.map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div>
-                    <div className="font-medium">{appointment.doctor}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {appointment.specialty}
+              {loading ? (
+                <div className="text-center py-8">Đang tải...</div>
+              ) : appointments && appointments.length > 0 ? (
+                appointments
+                  .filter((apt) => new Date(apt.scheduledTime) > new Date())
+                  .map((appointment) => (
+                    <div
+                      key={appointment._id}
+                      className="flex items-center justify-between rounded-lg border p-4"
+                    >
+                      <div>
+                        <div className="font-medium">{appointment.doctorId?.userId?.fullName || 'Không xác định'}</div>
+                        <div className="text-sm text-muted-foreground">{appointment.appointmentType}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(appointment.scheduledTime).toLocaleString('vi-VN')}
+                        </div>
+                      </div>
+                      <Badge
+                        className={
+                          appointment.status === 'confirmed'
+                            ? 'status-confirmed'
+                            : appointment.status === 'scheduled'
+                              ? 'status-scheduled'
+                              : 'bg-yellow-100 text-yellow-800'
+                        }
+                      >
+                        {appointment.status === 'confirmed' ? 'Đã xác nhận' :
+                          appointment.status === 'scheduled' ? 'Đã đặt lịch' :
+                            'Chờ xác nhận'}
+                      </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {appointment.time}
-                    </div>
-                  </div>
-                  <Badge 
-                    className={
-                      appointment.status === 'confirmed' 
-                        ? 'status-confirmed' 
-                        : 'status-scheduled'
-                    }
-                  >
-                    {appointment.status === 'confirmed' ? 'Đã xác nhận' : 'Đã đặt lịch'}
-                  </Badge>
-                </div>
-              ))}
+                  ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">Bạn chưa có lịch hẹn nào</div>
+              )}
               <Button
                 variant="outline"
                 className="w-full"
@@ -251,7 +274,6 @@ export default function PatientDashboard() {
           </Card>
         </motion.div>
 
-        {/* Recent Activity */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -263,19 +285,25 @@ export default function PatientDashboard() {
               <CardDescription>Cập nhật mới nhất từ hệ thống</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start space-x-3 rounded-lg border p-4"
-                >
-                  <div className="flex-1">
-                    <div className="text-sm">{activity.message}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {activity.time}
+              {loading ? (
+                <div className="text-center py-8">Đang tải...</div>
+              ) : notifications && notifications.length > 0 ? (
+                notifications.map((activity) => (
+                  <div
+                    key={activity._id}
+                    className="flex items-start space-x-3 rounded-lg border p-4"
+                  >
+                    <div className="flex-1">
+                      <div className="text-sm">{activity.message}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(activity.createdAt).toLocaleString('vi-VN')}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">Không có hoạt động gần đây</div>
+              )}
               <Button
                 variant="outline"
                 className="w-full"

@@ -129,10 +129,10 @@ export default function DoctorDashboard() {
                       </div>
                     </div>
                   </div>
-                  <Badge 
+                  <Badge
                     className={
-                      appointment.status === 'confirmed' 
-                        ? 'status-confirmed' 
+                      appointment.status === 'confirmed'
+                        ? 'status-confirmed'
                         : 'status-scheduled'
                     }
                   >

@@ -51,14 +51,14 @@ export function Header() {
 
         <div className="flex items-center space-x-4">
           {/* Language Toggle */}
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             onClick={toggleLanguage}
             className="text-muted-foreground hover:text-foreground"
           >
             <Globe className="h-5 w-5" />
-          </Button>
+          </Button> */}
 
           {/* Theme Toggle */}
           <Button

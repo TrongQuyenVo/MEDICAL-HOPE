@@ -12,6 +12,9 @@ import "./i18n";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
+import ServicesPage from "./pages/ServicesPage";
+import ProgramsPage from "./pages/ProgramsPage";
+import OrganizationsPage from "./pages/OrganizationsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
@@ -25,6 +28,10 @@ import CharityPage from "./pages/CharityPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ChatbotPage from "./pages/ChatbotPage";
 import NotFound from "./pages/NotFound";
+import UsersPage from "./pages/UsersPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import AboutPage from "./pages/AboutPage";
+import DoctorAvailabilityPage from "./pages/DoctorAvailabilityPage";
 
 const queryClient = new QueryClient();
 
@@ -50,14 +57,14 @@ const App = () => {
   // Protected Route Component
   const ProtectedRoute = ({ children, roles }: { children: React.ReactNode; roles?: string[] }) => {
     if (!isAuthenticated) {
-      return <Navigate to="/login" />;
+      return <Navigate to="/" />;
     }
-    
+
     if (roles && user && !roles.includes(user.role)) {
       toast.error('Access denied. Insufficient permissions.');
       return <Navigate to="/dashboard" />;
     }
-    
+
     return <>{children}</>;
   };
 
@@ -69,76 +76,98 @@ const App = () => {
             <Route path="/" element={<Layout />}>
               {/* Public Routes */}
               <Route index element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
+              <Route path="/services" element={<ServicesPage />} />
+              <Route path="/programs" element={<ProgramsPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/organizations" element={<OrganizationsPage />} />
               <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />} />
               <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <RegisterPage />} />
-              
+
               {/* Protected Routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <ProfilePage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/appointments" element={
                 <ProtectedRoute roles={['patient', 'doctor', 'admin']}>
                   <AppointmentsPage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/doctors" element={
                 <ProtectedRoute>
                   <DoctorsPage />
                 </ProtectedRoute>
               } />
-              
+
+              <Route path="/availability" element={
+                <ProtectedRoute roles={['doctor']}>
+                  <DoctorAvailabilityPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="/patients" element={
                 <ProtectedRoute roles={['doctor', 'admin', 'charity_admin']}>
                   <PatientsPage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/donations" element={
                 <ProtectedRoute>
                   <DonationsPage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/assistance" element={
                 <ProtectedRoute roles={['patient', 'admin', 'charity_admin']}>
                   <AssistancePage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/charity" element={
                 <ProtectedRoute roles={['admin', 'charity_admin']}>
                   <CharityPage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/notifications" element={
                 <ProtectedRoute>
                   <NotificationsPage />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/chatbot" element={
                 <ProtectedRoute>
                   <ChatbotPage />
                 </ProtectedRoute>
               } />
-              
+
+              <Route path="/users" element={
+                <ProtectedRoute roles={['admin']}>
+                  <UsersPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/analytics" element={
+                <ProtectedRoute roles={['admin']}>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              } />
+
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </BrowserRouter>
-        
+
         {/* Toasters */}
         <Toaster />
         <Sonner />

@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Home,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
@@ -51,6 +52,7 @@ export function Sidebar({ className }: SidebarProps) {
       doctor: [
         { path: '/appointments', icon: Calendar, label: t('appointments') },
         { path: '/patients', icon: Users, label: t('patients') },
+        { path: '/availability', icon: Clock, label: 'Lịch rảnh' },
       ],
       admin: [
         { path: '/users', icon: Users, label: 'Người dùng' },
@@ -86,29 +88,48 @@ export function Sidebar({ className }: SidebarProps) {
     <motion.aside
       initial={{ width: isCollapsed ? 80 : 280 }}
       animate={{ width: isCollapsed ? 80 : 280 }}
+      transition={{ duration: 0.35, ease: 'easeInOut' }}
       className={cn(
-        'border-r bg-sidebar flex flex-col transition-all duration-300 h-screen',
+        'border-r bg-sidebar flex flex-col h-screen',
         className
       )}
     >
       {/* Sidebar Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b">
-        {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Heart className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-bold text-sidebar-foreground">HealthCare+</span>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
+      <div className="flex h-16 items-center justify-between px-4 border-b relative">
+        <div className="flex items-center overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: isCollapsed ? 0 : 1, scale: isCollapsed ? 0.8 : 1 }}
+            transition={{ duration: 0.3 }}
+            className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center"
+          >
+            <Heart className="h-4 w-4 text-white" />
+          </motion.div>
+
+          <motion.span
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: isCollapsed ? 0 : 1, x: isCollapsed ? -10 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="ml-2 font-bold text-sidebar-foreground whitespace-nowrap"
+          >
+            HealthCare+
+          </motion.span>
+        </div>
+
+        {/* Toggle Button */}
+        <motion.button
           onClick={toggleCollapsed}
-          className="text-sidebar-foreground hover:bg-sidebar-accent"
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-sidebar-foreground/20 transition-all duration-300",
+            isCollapsed ? "left-1/2 -translate-x-1/2" : "right-4"
+          )}
         >
-          {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-        </Button>
+          {isCollapsed ? (
+            <Menu className="h-5 w-5 text-sidebar-foreground" />
+          ) : (
+            <X className="h-5 w-5 text-sidebar-foreground" />
+          )}
+        </motion.button>
       </div>
 
       {/* Navigation */}
@@ -119,7 +140,7 @@ export function Sidebar({ className }: SidebarProps) {
             to={item.path}
             className={({ isActive }) =>
               cn(
-                'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all',
+                'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 isActive
                   ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
@@ -128,22 +149,32 @@ export function Sidebar({ className }: SidebarProps) {
             }
           >
             <item.icon className="h-4 w-4 shrink-0" />
-            {!isCollapsed && <span className="ml-3">{item.label}</span>}
+            <motion.span
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: isCollapsed ? 0 : 1, x: isCollapsed ? -10 : 0 }}
+              transition={{ duration: 0.3 }}
+              className="ml-3 whitespace-nowrap"
+            >
+              {item.label}
+            </motion.span>
           </NavLink>
         ))}
       </nav>
 
       {/* User Role Badge */}
-      {!isCollapsed && (
-        <div className="px-4 pb-4">
-          <div className="healthcare-card p-3 text-center">
-            <div className="text-xs text-muted-foreground mb-1">Vai trò hiện tại</div>
-            <div className="text-sm font-medium capitalize text-primary">
-              {t(user.role)}
-            </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isCollapsed ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+        className="px-4 pb-4"
+      >
+        <div className="healthcare-card p-3 text-center">
+          <div className="text-xs text-muted-foreground mb-1">Vai trò hiện tại</div>
+          <div className="text-sm font-medium capitalize text-primary">
+            {t(user.role)}
           </div>
         </div>
-      )}
+      </motion.div>
     </motion.aside>
   );
 }

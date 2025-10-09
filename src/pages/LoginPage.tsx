@@ -62,27 +62,21 @@ export default function LoginPage() {
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
-      // Check if it's a demo account
-      const demoAccount = Object.values(demoAccounts).find(acc => acc.email === data.email);
-      
-      if (demoAccount && data.password === 'demo123') {
-        // Mock successful login for demo accounts
-        const mockUser = {
-          id: Math.random().toString(),
-          role: demoAccount.role,
-          fullName: demoAccount.name,
-          email: demoAccount.email,
-        };
-        
-        login(mockUser, 'demo-token');
-        toast.success(`Đăng nhập demo thành công: ${demoAccount.name}`);
-        navigate('/dashboard');
-      } else {
-        // For real authentication, you need Supabase integration
-        toast.error('Cần kết nối Supabase để xác thực thực tế. Hiện tại chỉ hỗ trợ demo accounts.');
-      }
-    } catch (error) {
-      toast.error(t('loginError'));
+      // Gọi API thật
+      const response = await authAPI.login(data);
+      const { user, token } = response.data;
+
+      login(user, token);
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      toast.success(t('loginSuccess', 'Đăng nhập thành công'));
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || t('loginError', 'Đăng nhập thất bại')
+      );
     } finally {
       setIsLoading(false);
     }

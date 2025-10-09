@@ -1,11 +1,19 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Gift, Heart, Target, TrendingUp } from 'lucide-react';
+import { Gift, Heart, Target, TrendingUp, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useAuthStore } from '@/stores/authStore';
+import DonationForm from '@/components/form/DonationForm';
 
 export default function DonationsPage() {
+  const { user } = useAuthStore();
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [showDonationForm, setShowDonationForm] = useState(false);
+
+  if (!user) return null;
   const campaigns = [
     {
       id: 1,
@@ -37,7 +45,55 @@ export default function DonationsPage() {
       daysLeft: 8,
       image: null
     },
+    {
+      id: 4,
+      title: 'Hỗ trợ phẫu thuật khẩn cấp cho cụ Hương',
+      description: 'Cụ Hương 75 tuổi cần phẫu thuật khẩn cấp.',
+      raised: 20000000,
+      target: 60000000,
+      donors: 89,
+      daysLeft: 10,
+      status: 'pending',
+      image: null
+    },
   ];
+
+  const getPageTitle = () => {
+    switch (user.role) {
+      case 'admin':
+      case 'charity_admin':
+        return 'Quản lý quyên góp';
+      default:
+        return 'Quyên góp từ thiện';
+    }
+  };
+
+  const getPageSubtitle = () => {
+    switch (user.role) {
+      case 'admin':
+      case 'charity_admin':
+        return 'Quản lý các chiến dịch quyên góp và duyệt yêu cầu';
+      default:
+        return 'Tham gia các chiến dịch quyên góp giúp đỡ người có hoàn cảnh khó khăn';
+    }
+  };
+
+  const getVisibleCampaigns = () => {
+    if (user.role === 'admin' || user.role === 'charity_admin') {
+      return campaigns; // Show all campaigns including pending
+    }
+    return campaigns.filter(campaign => !campaign.status || campaign.status !== 'pending');
+  };
+
+  const handleApproveCampaign = (campaignId: number) => {
+    console.log('Duyệt chiến dịch:', campaignId);
+    // TODO: API call to approve campaign
+  };
+
+  const handleRejectCampaign = (campaignId: number) => {
+    console.log('Từ chối chiến dịch:', campaignId);
+    // TODO: API call to reject campaign
+  };
 
   const recentDonations = [
     {
@@ -75,13 +131,18 @@ export default function DonationsPage() {
     >
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="healthcare-heading text-3xl font-bold">Quyên góp từ thiện</h1>
-          <p className="healthcare-subtitle">Tham gia các chiến dịch quyên góp giúp đỡ người có hoàn cảnh khó khăn</p>
+          <h1 className="healthcare-heading text-3xl font-bold">{getPageTitle()}</h1>
+          <p className="healthcare-subtitle">{getPageSubtitle()}</p>
         </div>
-        <Button className="btn-charity">
-          <Gift className="mr-2 h-4 w-4" />
-          Quyên góp ngay
-        </Button>
+        {(user.role === 'patient' || user.role === 'doctor') && (
+          <Button
+            className="btn-charity"
+            onClick={() => setShowDonationForm(true)}
+          >
+            <Gift className="mr-2 h-4 w-4" />
+            Quyên góp ngay
+          </Button>
+        )}
       </div>
 
       {/* Campaign Stats */}
@@ -128,11 +189,13 @@ export default function DonationsPage() {
         </Card>
       </div>
 
-      {/* Active Campaigns */}
+      {/* Active/All Campaigns */}
       <div>
-        <h2 className="healthcare-heading text-2xl font-bold mb-6">Chiến dịch đang diễn ra</h2>
+        <h2 className="healthcare-heading text-2xl font-bold mb-6">
+          {(user.role === 'admin' || user.role === 'charity_admin') ? 'Tất cả chiến dịch' : 'Chiến dịch đang diễn ra'}
+        </h2>
         <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-          {campaigns.map((campaign, index) => {
+          {getVisibleCampaigns().map((campaign, index) => {
             const progress = (campaign.raised / campaign.target) * 100;
             return (
               <motion.div
@@ -164,12 +227,56 @@ export default function DonationsPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <Badge variant="outline">
-                        Còn {campaign.daysLeft} ngày
-                      </Badge>
-                      <Button className="btn-charity">
-                        Ủng hộ ngay
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">
+                          Còn {campaign.daysLeft} ngày
+                        </Badge>
+                        {campaign.status === 'pending' && (
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                            Chờ duyệt
+                          </Badge>
+                        )}
+                      </div>
+
+                      {(user.role === 'admin' || user.role === 'charity_admin') && campaign.status === 'pending' ? (
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleApproveCampaign(campaign.id)}
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRejectCampaign(campaign.id)}
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (user.role === 'admin' || user.role === 'charity_admin') ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="btn-secondary"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Xem chi tiết
+                        </Button>
+                      ) : (
+                        <Button
+                          className="btn-charity"
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowDonationForm(true);
+                          }}
+                        >
+                          Ủng hộ ngay
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -218,6 +325,13 @@ export default function DonationsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Donation Form */}
+      <DonationForm
+        open={showDonationForm}
+        onOpenChange={setShowDonationForm}
+        campaign={selectedCampaign}
+      />
     </motion.div>
   );
 }

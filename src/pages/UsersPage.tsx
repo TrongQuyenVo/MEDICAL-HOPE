@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, MoreHorizontal, Shield, ShieldCheck, ShieldX, Edit, Trash2, Plus } from 'lucide-react';
+import { Search, MoreHorizontal, Shield, ShieldCheck, ShieldX, Edit, Trash2, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { usersAPI } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -31,7 +33,15 @@ interface User {
   status: 'active' | 'inactive' | 'suspended';
   createdAt: string;
   lastLogin: string;
-  verified: boolean;
+  isActive: boolean;
+  profile?: {
+    dateOfBirth?: string;
+    gender?: 'male' | 'female' | 'other';
+    address?: string;
+    insurance?: string;
+    occupation?: string;
+  };
+  avatar?: string;
 }
 
 export default function UsersPage() {
@@ -39,64 +49,40 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const mockUsers: User[] = [
-    {
-      id: '1',
-      fullName: 'Nguyễn Văn An',
-      email: 'nguyen.van.an@example.com',
-      phone: '0987654321',
-      role: 'patient',
-      status: 'active',
-      createdAt: '2024-01-15',
-      lastLogin: '2024-12-22',
-      verified: true
-    },
-    {
-      id: '2',
-      fullName: 'BS. Trần Thị Bình',
-      email: 'bs.tran.thi.binh@example.com',
-      phone: '0987654322',
-      role: 'doctor',
-      status: 'active',
-      createdAt: '2024-02-20',
-      lastLogin: '2024-12-21',
-      verified: true
-    },
-    {
-      id: '3',
-      fullName: 'Lê Hoàng Cường',
-      email: 'le.hoang.cuong@example.com',
-      phone: '0987654323',
-      role: 'admin',
-      status: 'active',
-      createdAt: '2024-01-10',
-      lastLogin: '2024-12-22',
-      verified: true
-    },
-    {
-      id: '4',
-      fullName: 'Phạm Thị Dung',
-      email: 'pham.thi.dung@example.com',
-      phone: '0987654324',
-      role: 'charity_admin',
-      status: 'active',
-      createdAt: '2024-03-05',
-      lastLogin: '2024-12-20',
-      verified: true
-    },
-    {
-      id: '5',
-      fullName: 'Hoàng Văn Em',
-      email: 'hoang.van.em@example.com',
-      phone: '0987654325',
-      role: 'patient',
-      status: 'inactive',
-      createdAt: '2024-06-12',
-      lastLogin: '2024-11-15',
-      verified: false
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await usersAPI.getAllUsers();
+      const usersData = Array.isArray(response.data.users) ? response.data.users : [];
+      const mappedUsers: User[] = usersData.map((user: any) => ({
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+        isActive: user.isActive,
+        profile: user.profile,
+        avatar: user.avatar,
+      }));
+      setUsers(mappedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Không thể lấy danh sách người dùng. Vui lòng thử lại.');
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -136,19 +122,19 @@ export default function UsersPage() {
     }
   };
 
-  const filteredUsers = mockUsers.filter(user => {
+  const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
 
     return matchesSearch && matchesRole && matchesStatus;
-  });
+  }) : [];
 
-  const totalUsers = mockUsers.length;
-  const activeUsers = mockUsers.filter(u => u.status === 'active').length;
-  const verifiedUsers = mockUsers.filter(u => u.verified).length;
-  const newUsersThisMonth = mockUsers.filter(u =>
+  const totalUsers = filteredUsers.length;
+  const activeUsers = filteredUsers.filter(u => u.status === 'active').length;
+  const verifiedUsers = filteredUsers.filter(u => u.isActive).length;
+  const newUsersThisMonth = filteredUsers.filter(u =>
     new Date(u.createdAt).getMonth() === new Date().getMonth()
   ).length;
 
@@ -164,10 +150,7 @@ export default function UsersPage() {
           <h1 className="healthcare-heading text-3xl font-bold">Quản lý người dùng</h1>
           <p className="healthcare-subtitle">Quản lý tài khoản và quyền hạn người dùng</p>
         </div>
-        <Button className="btn-healthcare">
-          <Plus className="mr-2 h-4 w-4" />
-          Thêm người dùng
-        </Button>
+
       </div>
 
       {/* Stats Overview */}
@@ -189,7 +172,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">{activeUsers}</div>
-            <p className="text-xs text-muted-foreground">{((activeUsers / totalUsers) * 100).toFixed(1)}% tổng số</p>
+            <p className="text-xs text-muted-foreground">{totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(1) : 0}% tổng số</p>
           </CardContent>
         </Card>
         <Card className="healthcare-card">
@@ -199,7 +182,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{verifiedUsers}</div>
-            <p className="text-xs text-muted-foreground">{((verifiedUsers / totalUsers) * 100).toFixed(1)}% đã xác thực</p>
+            <p className="text-xs text-muted-foreground">{totalUsers > 0 ? ((verifiedUsers / totalUsers) * 100).toFixed(1) : 0}% đã xác thực</p>
           </CardContent>
         </Card>
         <Card className="healthcare-card">
@@ -209,7 +192,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {mockUsers.filter(u => u.status === 'suspended').length}
+              {filteredUsers.filter(u => u.status === 'suspended').length}
             </div>
             <p className="text-xs text-muted-foreground">Cần xem xét</p>
           </CardContent>
@@ -257,89 +240,15 @@ export default function UsersPage() {
       </Card>
 
       {/* Users List */}
-      <div className="space-y-4">
-        {filteredUsers.map((user, index) => (
-          <motion.div
-            key={user.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <Card className="healthcare-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.fullName}`} />
-                      <AvatarFallback>{user.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold healthcare-heading">{user.fullName}</h3>
-                        {user.verified && (
-                          <ShieldCheck className="h-4 w-4 text-success" />
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                      <p className="text-sm text-muted-foreground">{user.phone}</p>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Badge className={getRoleColor(user.role)}>
-                          {getRoleLabel(user.role)}
-                        </Badge>
-                        <Badge className={getStatusColor(user.status)}>
-                          {getStatusLabel(user.status)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>Tham gia: {new Date(user.createdAt).toLocaleDateString('vi-VN')}</p>
-                      <p>Lần cuối: {new Date(user.lastLogin).toLocaleDateString('vi-VN')}</p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Shield className="mr-2 h-4 w-4" />
-                          Phân quyền
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {user.status === 'active' ? (
-                          <DropdownMenuItem className="text-warning">
-                            <ShieldX className="mr-2 h-4 w-4" />
-                            Đình chỉ
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem className="text-success">
-                            <ShieldCheck className="mr-2 h-4 w-4" />
-                            Kích hoạt
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Xóa
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      {filteredUsers.length === 0 && (
+      {loading ? (
+        <Card className="healthcare-card">
+          <CardContent className="pt-6">
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredUsers.length === 0 ? (
         <Card className="healthcare-card">
           <CardContent className="pt-6">
             <div className="text-center py-12">
@@ -349,6 +258,79 @@ export default function UsersPage() {
             </div>
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredUsers.map((user, index) => (
+            <motion.div
+              key={user.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="healthcare-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.fullName}`} />
+                        <AvatarFallback>{user.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-semibold healthcare-heading">{user.fullName}</h3>
+                          {user.isActive && (
+                            <ShieldCheck className="h-4 w-4 text-success" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">{user.phone}</p>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Badge className={getRoleColor(user.role)}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                          <Badge className={getStatusColor(user.status)}>
+                            {getStatusLabel(user.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right text-sm text-muted-foreground">
+                        <p>Tham gia: {new Date(user.createdAt).toLocaleDateString('vi-VN')}</p>
+                        <p>Lần cuối: {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('vi-VN') : 'Chưa đăng nhập'}</p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.status === 'active' ? (
+                            <DropdownMenuItem className="text-warning">
+                              <ShieldX className="mr-2 h-4 w-4" />
+                              Đình chỉ
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem className="text-success">
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              Kích hoạt
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       )}
     </motion.div>
   );

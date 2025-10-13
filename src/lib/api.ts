@@ -75,8 +75,10 @@ export const usersAPI = {
   getAllUsers: (params?: any) => api.get('/users', { params }),
   updateProfile: (data: any) => api.put('/users/profile', data),
   changePassword: (data: any) => api.put('/users/change-password', data),
-};
-
+  suspendUser: (id: string) => api.patch(`/users/${id}/suspend`),
+  activateUser: (id: string) => api.patch(`/users/${id}/activate`),
+  deleteUser: (id: string) => api.delete(`/users/${id}`),
+}
 // ==========================
 // 🩺 DOCTORS API
 // ==========================

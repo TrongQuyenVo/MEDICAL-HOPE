@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import BookAppointmentForm from '@/components/form/BookAppointmentForm';
+import { appointmentsAPI } from '@/lib/api';
 
 export default function AppointmentsPage() {
   const { user } = useAuthStore();
@@ -17,34 +18,31 @@ export default function AppointmentsPage() {
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
 
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await appointmentsAPI.getAll({
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+
+      const appointmentsData = Array.isArray(response.data.appointments)
+        ? response.data.appointments
+        : [];
+
+      setAppointments(appointmentsData);
+      setPagination(response.data.pagination || { total: 0, pages: 1, page: 1, limit: 10 });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Không thể tải danh sách lịch hẹn');
+      setError(error.response?.data?.message || 'Không thể tải danh sách lịch hẹn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔄 Gọi khi vào trang hoặc thay đổi pagination
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-        }
-
-        const response = await axios.get('/api/appointments', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { page: pagination.page, limit: pagination.limit },
-        });
-
-        const appointmentsData = Array.isArray(response.data.appointments)
-          ? response.data.appointments
-          : [];
-        setAppointments(appointmentsData);
-        setPagination(response.data.pagination || { total: 0, pages: 1, page: 1, limit: 10 });
-      } catch (error) {
-        console.error('Lỗi tải danh sách lịch hẹn:', error);
-        setError(error.response?.data?.message || 'Không thể tải danh sách lịch hẹn');
-        toast.error(error.response?.data?.message || 'Không thể tải danh sách lịch hẹn');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAppointments();
   }, [pagination.page, pagination.limit]);
 
@@ -52,7 +50,7 @@ export default function AppointmentsPage() {
     try {
       const token = localStorage.getItem('token');
       await axios.patch(
-        `/api/appointments/${appointmentId}/status`,
+        `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
         { status: 'confirmed' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -72,8 +70,8 @@ export default function AppointmentsPage() {
     try {
       const token = localStorage.getItem('token');
       await axios.patch(
-        `/api/appointments/${appointmentId}/status`,
-        { status: 'cancelled' },
+        `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
+        { status: 'cancelled' },  // Sửa từ 'confirmed' thành 'cancelled'
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setAppointments((prev) =>
@@ -85,6 +83,26 @@ export default function AppointmentsPage() {
     } catch (error) {
       console.error('Lỗi từ chối lịch hẹn:', error);
       toast.error(error.response?.data?.message || 'Không thể từ chối lịch hẹn');
+    }
+  };
+
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
+        { status: 'cancelled' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAppointments((prev) =>
+        prev.map((apt) =>
+          apt._id === appointmentId ? { ...apt, status: 'cancelled' } : apt
+        )
+      );
+      toast.success('Bạn đã hủy lịch hẹn thành công');
+    } catch (error) {
+      console.error('Lỗi khi hủy lịch hẹn:', error);
+      toast.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
     }
   };
 
@@ -204,14 +222,18 @@ export default function AppointmentsPage() {
                           ? 'status-confirmed'
                           : appointment.status === 'scheduled'
                             ? 'status-scheduled'
-                            : 'bg-yellow-100 text-yellow-800'
+                            : appointment.status === 'cancelled'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
                       }
                     >
                       {appointment.status === 'confirmed' && 'Đã xác nhận'}
                       {appointment.status === 'scheduled' && 'Đã đặt lịch'}
                       {appointment.status === 'pending' && 'Chờ xác nhận'}
+                      {appointment.status === 'cancelled' && 'Đã hủy'}
                     </Badge>
 
+                    {/* Nút cho bác sĩ: Xác nhận và Từ chối nếu status là 'scheduled' */}
                     {user.role === 'doctor' && appointment.status === 'scheduled' && (
                       <div className="flex space-x-2">
                         <Button
@@ -220,7 +242,8 @@ export default function AppointmentsPage() {
                           onClick={() => handleConfirmAppointment(appointment._id)}
                           className="text-green-600 border-green-600 hover:bg-green-50"
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Xác nhận
                         </Button>
                         <Button
                           size="sm"
@@ -228,8 +251,50 @@ export default function AppointmentsPage() {
                           onClick={() => handleRejectAppointment(appointment._id)}
                           className="text-red-600 border-red-600 hover:bg-red-50"
                         >
-                          <XCircle className="h-4 w-4" />
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Từ chối
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Nút cho bệnh nhân: Hủy nếu status là 'scheduled' (chưa confirmed) */}
+                    {user.role === 'patient' && appointment.status === 'scheduled' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCancelAppointment(appointment._id)}
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Hủy lịch
+                      </Button>
+                    )}
+
+                    {/* Nút cho admin: Có thể xác nhận, từ chối, hủy bất kỳ lúc nào (tùy chỉnh theo nhu cầu) */}
+                    {(user.role === 'admin' || user.role === 'charity_admin') && (
+                      <div className="flex space-x-2">
+                        {appointment.status !== 'confirmed' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleConfirmAppointment(appointment._id)}
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Xác nhận
+                          </Button>
+                        )}
+                        {appointment.status !== 'cancelled' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRejectAppointment(appointment._id)}
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Hủy/Từ chối
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -267,6 +332,7 @@ export default function AppointmentsPage() {
           open={openDialog}
           onOpenChange={setOpenDialog}
           doctor={null}
+          onSuccess={fetchAppointments}
         />
       )}
     </motion.div>

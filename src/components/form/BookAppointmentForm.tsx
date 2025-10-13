@@ -34,7 +34,7 @@ const schema = yup.object({
   patientNotes: yup.string(),
 });
 
-export default function BookAppointmentForm({ open, onOpenChange, doctor }) {
+export default function BookAppointmentForm({ open, onOpenChange, doctor, onSuccess }) {
   const { user, isAuthenticated, token } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -119,13 +119,16 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor }) {
       return;
     }
 
-    const [slotDate, slotTime] = data.slotId.split("-");
+    const [year, month, day, slotTime] = data.slotId.split("-");
+    const slotDate = `${year}-${month}-${day}`;
     const scheduledTime = new Date(`${slotDate}T${slotTime}:00`);
 
     setIsSubmitting(true);
     try {
       await appointmentsAPI.create({
         doctorId: data.doctorId,
+        date: slotDate,
+        time: slotTime,
         scheduledTime,
         appointmentType: data.appointmentType,
         patientNotes: data.patientNotes,
@@ -133,7 +136,19 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor }) {
       toast.success("Đặt lịch hẹn thành công!");
       reset();
       onOpenChange(false);
+      if (onSuccess) onSuccess();
     } catch (err) {
+      console.error("❌ Error when creating appointment:", err);
+      console.error("🧩 Response data:", err.response?.data);
+      console.error("📦 Request data:", {
+        doctorId: data.doctorId,
+        date: slotDate,
+        time: slotTime,
+        scheduledTime,
+        appointmentType: data.appointmentType,
+        patientNotes: data.patientNotes,
+      });
+
       toast.error(err.response?.data?.message || "Có lỗi xảy ra khi đặt lịch.");
     } finally {
       setIsSubmitting(false);

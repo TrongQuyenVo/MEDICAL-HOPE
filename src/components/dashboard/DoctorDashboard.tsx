@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 export default function DoctorDashboard() {
   const navigate = useNavigate();
@@ -104,7 +106,7 @@ export default function DoctorDashboard() {
                 <div>
                   <CardTitle className="healthcare-heading">Lịch khám hôm nay</CardTitle>
                   <CardDescription>
-                    Thứ Hai, 25 tháng 12 năm 2024
+                    {format(new Date(), "EEEE, dd 'tháng' MM 'năm' yyyy", { locale: vi })}
                   </CardDescription>
                 </div>
                 <Button onClick={() => navigate('/appointments')}>

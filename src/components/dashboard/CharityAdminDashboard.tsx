@@ -171,7 +171,7 @@ export default function CharityAdminDashboard() {
                   <CardTitle className="healthcare-heading">Yêu cầu hỗ trợ chờ duyệt</CardTitle>
                   <CardDescription>Các yêu cầu cần được xem xét</CardDescription>
                 </div>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => navigate('/assistance')}
                 >

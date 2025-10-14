@@ -22,7 +22,7 @@ export default function ScrollToTop() {
       {showScrollTop && (
         <Button
           size="icon"
-          className="fixed bottom-6 right-6 rounded-full shadow-lg"
+          className="fixed w-14 h-14 bottom-20 right-4 rounded-full bg-gradient-primary text-white shadow-lg hover:bg-primary/90"
           onClick={scrollToTop}
         >
           <ChevronUp className="h-6 w-6" />

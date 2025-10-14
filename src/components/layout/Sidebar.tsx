@@ -5,7 +5,6 @@ import {
   Heart,
   Users,
   Stethoscope,
-  MessageCircle,
   Gift,
   HandHeart,
   Building2,
@@ -34,12 +33,11 @@ export function Sidebar({ className }: SidebarProps) {
 
   if (!user) return null;
 
-  // Navigation items based on user role
+  // Navigation items based on user role, excluding chatbot
   const getNavigationItems = () => {
     const commonItems = [
       { path: '/dashboard', icon: Home, label: t('dashboard') },
       { path: '/profile', icon: Settings, label: t('profile') },
-      { path: '/chatbot', icon: MessageCircle, label: t('chatbot') },
     ];
 
     const roleSpecificItems = {
@@ -110,7 +108,7 @@ export function Sidebar({ className }: SidebarProps) {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: isCollapsed ? 0 : 1, x: isCollapsed ? -10 : 0 }}
             transition={{ duration: 0.3 }}
-            className="ml-2 font-bold text-sidebar-foreground whitespace-nowrap"
+            className="ml-2 whitespace-nowrap healthcare-heading text-lg font-bold"
           >
             HealthCare+
           </motion.span>

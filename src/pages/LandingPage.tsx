@@ -27,6 +27,7 @@ import who from '@/assets/who.png';
 import mfs from '@/assets/msf.svg';
 import hoiyhoc from '@/assets/hoiyhoc.jpg';
 import thientam from '@/assets/thientam.png';
+import ChatBubble from './ChatbotPage';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -660,6 +661,7 @@ export default function LandingPage() {
       </section>
 
       <Footer />
+      <ChatBubble/>
       <ScrollToTop />
     </div>
   );

@@ -41,12 +41,7 @@ export function Header() {
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <div className="h-4 w-4 rounded bg-white" />
-            </div>
-            <span className="healthcare-heading text-lg font-bold">HealthCare+</span>
-          </div>
+
         </div>
 
         <div className="flex items-center space-x-4">

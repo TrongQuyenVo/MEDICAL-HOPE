@@ -118,7 +118,7 @@ export default function DonationForm({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onSubmit = async (data: any) => {
     const { vnp_TmnCode, vnp_HashSecret, vnp_Url, BASE_URL } = ENV;
-    const returnUrl = `${BASE_URL}/đsds`;
+    const returnUrl = `${BASE_URL}/xac-nhan-thanh-toan`;
     if (!vnp_HashSecret || !vnp_Url || !vnp_TmnCode || !returnUrl) {
       alert("Không thể thực hiện thanh toán, thiếu thông tin cấu hình.");
       return;
@@ -155,6 +155,7 @@ export default function DonationForm({
     const vnp_SecureHash = calculateVnpSecureHash(sortedParams, vnp_HashSecret);
     const paymentUrl = `${vnp_Url}?${sortedParams}&vnp_SecureHash=${vnp_SecureHash}`;
     alert(`Thanh toán qua VNPay với số tiền: ${watchedAmount} VND`);
+    console.log({ paymentUrl });
     window.location.href = paymentUrl;
   };
 

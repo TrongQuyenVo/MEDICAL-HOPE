@@ -24,7 +24,6 @@ import DoctorsPage from "./pages/DoctorsPage";
 import PatientsPage from "./pages/PatientsPage";
 import DonationsPage from "./pages/DonationsPage";
 import AssistancePage from "./pages/AssistancePage";
-import CharityPage from "./pages/CharityPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ChatbotPage from "./pages/ChatbotPage";
 import NotFound from "./pages/NotFound";
@@ -32,8 +31,13 @@ import UsersPage from "./pages/UsersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import AboutPage from "./pages/AboutPage";
 import DoctorAvailabilityPage from "./pages/DoctorAvailabilityPage";
-import PaymentConfirmPage from "./pages/PaymentConfirmPage";
-
+import PaymentConfirmPage from "./pages/payment/PaymentConfirmPage";
+import PaymentSuccess from "./pages/payment/PaymentSuccess";
+import PaymentFailed from "./pages/payment/PaymentFailed";
+import PaymentInvalid from "./pages/payment/PaymentInvalid";
+import ExtendedBusPartnerList from "./pages/ExtendedBusPartnerList";
+import ExtendedFoodDistributionList from "./pages/ExtendedFoodDistributionList";
+import { PartnerManagement } from "./pages/PartnerManagement";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -86,6 +90,9 @@ const App = () => {
                 path="/xac-nhan-thanh-toan"
                 element={<PaymentConfirmPage />}
               />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-failed" element={<PaymentFailed />} />
+              <Route path="/payment-invalid" element={<PaymentInvalid />} />
               <Route
                 index
                 element={
@@ -100,6 +107,14 @@ const App = () => {
               <Route path="/programs" element={<ProgramsPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/organizations" element={<OrganizationsPage />} />
+              <Route
+                path="/transport"
+                element={<ExtendedBusPartnerList />}
+              />
+              <Route
+                path="/food-distribution"
+                element={<ExtendedFoodDistributionList />}
+              />
               <Route
                 path="/login"
                 element={
@@ -182,19 +197,19 @@ const App = () => {
               />
 
               <Route
-                path="/assistance"
+                path="/partners"
                 element={
-                  <ProtectedRoute roles={["patient", "admin", "charity_admin"]}>
-                    <AssistancePage />
+                  <ProtectedRoute roles={["admin", "charity_admin"]}>
+                    <PartnerManagement />
                   </ProtectedRoute>
                 }
               />
 
               <Route
-                path="/charity"
+                path="/assistance"
                 element={
-                  <ProtectedRoute roles={["admin", "charity_admin"]}>
-                    <CharityPage />
+                  <ProtectedRoute roles={["patient", "admin", "charity_admin"]}>
+                    <AssistancePage />
                   </ProtectedRoute>
                 }
               />

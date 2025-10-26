@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
+import { assistanceAPI } from '@/lib/api';
 
 interface AssistanceRequestFormProps {
   open: boolean;
@@ -103,18 +104,30 @@ export default function AssistanceRequestForm({ open, onOpenChange }: Assistance
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 📤 TẠO FormData ĐỂ GỬI FILES + DATA
+      const formData = new FormData();
+      formData.append('requestType', data.requestType);
+      formData.append('title', data.title);
+      formData.append('description', data.description);
+      formData.append('requestedAmount', data.requestedAmount.toString());
+      formData.append('urgency', data.urgency);
+      formData.append('contactPhone', data.contactPhone);
+      formData.append('medicalCondition', data.medicalCondition);
 
-      // Here you would typically upload files and submit the form data
-      console.log('Form data:', data);
-      console.log('Attachments:', attachments);
+      // 📎 THÊM FILES
+      attachments.forEach(file => {
+        formData.append('attachments', file);
+      });
+
+      // 🚀 GỌI API THẬT
+      await assistanceAPI.create(formData);
 
       toast.success('Yêu cầu hỗ trợ đã được gửi thành công!');
       reset();
       setAttachments([]);
       onOpenChange(false);
     } catch (error) {
+      console.error('Submit error:', error);
       toast.error('Có lỗi xảy ra. Vui lòng thử lại!');
     } finally {
       setIsSubmitting(false);

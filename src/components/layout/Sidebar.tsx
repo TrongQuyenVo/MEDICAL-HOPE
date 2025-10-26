@@ -44,7 +44,6 @@ export function Sidebar({ className }: SidebarProps) {
       patient: [
         { path: '/appointments', icon: Calendar, label: t('appointments') },
         { path: '/doctors', icon: Stethoscope, label: t('doctors') },
-        { path: '/donations', icon: Gift, label: t('donations') },
         { path: '/assistance', icon: HandHeart, label: 'Yêu cầu hỗ trợ' },
       ],
       doctor: [
@@ -54,19 +53,17 @@ export function Sidebar({ className }: SidebarProps) {
       ],
       admin: [
         { path: '/users', icon: Users, label: 'Người dùng' },
-        { path: '/patients', icon: Heart, label: t('patients') },
-        { path: '/doctors', icon: Stethoscope, label: t('doctors') },
         { path: '/appointments', icon: Calendar, label: t('appointments') },
         { path: '/donations', icon: Gift, label: t('donations') },
         { path: '/assistance', icon: HandHeart, label: t('assistance') },
-        { path: '/charity', icon: Building2, label: t('charity') },
+        { path: '/partners', icon: Building2, label: 'Quản lý đối tác' }, // Added partner management
         { path: '/analytics', icon: BarChart3, label: 'Thống kê' },
       ],
       charity_admin: [
         { path: '/patients', icon: Heart, label: t('patients') },
         { path: '/donations', icon: Gift, label: t('donations') },
         { path: '/assistance', icon: HandHeart, label: t('assistance') },
-        { path: '/charity', icon: Building2, label: t('charity') },
+        { path: '/partners', icon: Building2, label: 'Quản lý đối tác' }, // Added partner management
       ],
     };
 
@@ -110,7 +107,7 @@ export function Sidebar({ className }: SidebarProps) {
             transition={{ duration: 0.3 }}
             className="ml-2 whitespace-nowrap healthcare-heading text-lg font-bold"
           >
-            HealthCare+
+            MedicalHope+
           </motion.span>
         </div>
 
@@ -136,11 +133,11 @@ export function Sidebar({ className }: SidebarProps) {
           <NavLink
             key={item.path}
             to={item.path}
-            className={({ isActive }) =>
+            className={({ isActive: navActive }) =>
               cn(
                 'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                isActive
+                isActive(item.path)
                   ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
                   : 'text-sidebar-foreground'
               )

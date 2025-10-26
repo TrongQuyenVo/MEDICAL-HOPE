@@ -29,15 +29,12 @@ const PaymentConfirmPage: React.FC = () => {
     if (vnp_SecureHash === signed) {
       const { vnp_TransactionStatus } = vnp_Params;
       if (vnp_TransactionStatus === "00") {
-        alert("Thanh toán thành công");
-        navigate("/");
+        navigate("/payment-success");
       } else {
-        alert("Thanh toán không thành công");
-        navigate("/thanh-toan-that-bai");
+        navigate("/payment-failed");
       }
     } else {
-      alert("Xác thực thanh toán thất bại");
-      navigate("/thanh-toan-that-bai");
+      navigate("/payment-invalid");
     }
   };
 

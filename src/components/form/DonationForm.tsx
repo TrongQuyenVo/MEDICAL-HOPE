@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -29,6 +29,7 @@ import toast from "react-hot-toast";
 import { ENV } from "@/config/ENV";
 import { sortObject } from "@/utils/sortObject";
 import { calculateVnpSecureHash } from "@/utils/calculateVnpSecureHash";
+import { useAuthStore } from "@/stores/authStore";
 
 interface Campaign {
   id: string;
@@ -89,6 +90,7 @@ export default function DonationForm({
   campaign,
 }: DonationFormProps) {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -99,12 +101,39 @@ export default function DonationForm({
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm<FormData>({
     resolver: yupResolver(schema),
     context: { isAnonymous },
   });
 
   const watchedAmount = watch("amount");
+
+  // Tự động điền thông tin người dùng khi form mở và không chọn ẩn danh
+  useEffect(() => {
+    if (open && user && !isAnonymous) {
+      setValue("donorName", user.fullName || "");
+      setValue("donorEmail", user.email || "");
+      setValue("donorPhone", user.phone || "");
+    }
+  }, [open, user, isAnonymous, setValue]);
+
+  // Xóa thông tin khi chọn ẩn danh
+  useEffect(() => {
+    if (isAnonymous) {
+      setValue("donorName", "");
+      setValue("donorEmail", "");
+      setValue("donorPhone", "");
+    }
+  }, [isAnonymous, setValue]);
+
+  useEffect(() => {
+    if (!open) {
+      reset(); 
+      setIsAnonymous(false);
+      setSelectedAmount(null);
+    }
+  }, [open, reset]);
 
   const quickAmounts = [50000, 100000, 200000, 500000, 1000000, 2000000];
 
@@ -115,7 +144,6 @@ export default function DonationForm({
     setValue("amount", amount);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onSubmit = async (data: any) => {
     const { vnp_TmnCode, vnp_HashSecret, vnp_Url, BASE_URL } = ENV;
     const returnUrl = `${BASE_URL}/xac-nhan-thanh-toan`;
@@ -170,19 +198,14 @@ export default function DonationForm({
             Quyên góp từ thiện
           </DialogTitle>
           <DialogDescription>
-            Mỗi đóng góp của bạn đều mang lại hy vọng cho những người cần giúp
-            đỡ
+            Mỗi đóng góp của bạn đều mang lại hy vọng cho những người cần giúp đỡ
           </DialogDescription>
         </DialogHeader>
 
         {campaign && (
           <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-            <h3 className="font-semibold healthcare-heading">
-              {campaign.title}
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              {campaign.description}
-            </p>
+            <h3 className="font-semibold healthcare-heading">{campaign.title}</h3>
+            <p className="text-muted-foreground text-sm">{campaign.description}</p>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Đã quyên góp:</span>
@@ -236,17 +259,14 @@ export default function DonationForm({
                 }}
               />
               {errors.amount && (
-                <p className="text-sm text-destructive">
-                  {errors.amount.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.amount.message}</p>
               )}
             </div>
 
             {watchedAmount && (
               <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                 <p className="text-green-800 dark:text-green-200 font-medium">
-                  Số tiền quyên góp:{" "}
-                  {Number(watchedAmount).toLocaleString("vi-VN")} VNĐ
+                  Số tiền quyên góp: {Number(watchedAmount).toLocaleString("vi-VN")} VNĐ
                 </p>
               </div>
             )}
@@ -265,9 +285,7 @@ export default function DonationForm({
                 <Checkbox
                   id="anonymous"
                   checked={isAnonymous}
-                  onCheckedChange={(checked) =>
-                    setIsAnonymous(checked === true)
-                  }
+                  onCheckedChange={(checked) => setIsAnonymous(checked === true)}
                 />
                 <Label htmlFor="anonymous" className="text-sm">
                   Quyên góp ẩn danh
@@ -285,9 +303,7 @@ export default function DonationForm({
                   {...register("donorName")}
                 />
                 {errors.donorName && (
-                  <p className="text-sm text-destructive">
-                    {errors.donorName.message}
-                  </p>
+                  <p className="text-sm text-destructive">{errors.donorName.message}</p>
                 )}
               </div>
 
@@ -302,9 +318,7 @@ export default function DonationForm({
                     {...register("donorEmail")}
                   />
                   {errors.donorEmail && (
-                    <p className="text-sm text-destructive">
-                      {errors.donorEmail.message}
-                    </p>
+                    <p className="text-sm text-destructive">{errors.donorEmail.message}</p>
                   )}
                 </div>
 
@@ -318,9 +332,7 @@ export default function DonationForm({
                     {...register("donorPhone")}
                   />
                   {errors.donorPhone && (
-                    <p className="text-sm text-destructive">
-                      {errors.donorPhone.message}
-                    </p>
+                    <p className="text-sm text-destructive">{errors.donorPhone.message}</p>
                   )}
                 </div>
               </div>
@@ -357,9 +369,7 @@ export default function DonationForm({
               </SelectContent>
             </Select>
             {errors.paymentMethod && (
-              <p className="text-sm text-destructive">
-                {errors.paymentMethod.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.paymentMethod.message}</p>
             )}
           </div>
 
@@ -370,8 +380,7 @@ export default function DonationForm({
                 Thanh toán điện tử VNPay
               </h4>
               <p>
-                Bạn sẽ được chuyển đến cổng thanh toán VNPay để hoàn tất giao
-                dịch.
+                Bạn sẽ được chuyển đến cổng thanh toán VNPay để hoàn tất giao dịch.
               </p>
               <Button
                 type="submit"

@@ -9,11 +9,12 @@ import { Calendar, Clock, Save, PlusCircle } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function DoctorAvailabilityPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [slots, setSlots] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Load từ DB
+  //Load từ DB
   useEffect(() => {
     (async () => {
       try {
@@ -27,45 +28,45 @@ export default function DoctorAvailabilityPage() {
     })();
   }, []);
 
-  // ➕ Thêm ngày mới
+  //Thêm ngày mới
   const handleAddSlot = () => {
     setSlots([...slots, { date: '', times: [''], isActive: true }]);
   };
 
-  // 🧭 Cập nhật ngày
+  //Cập nhật ngày
   const handleDateChange = (index: number, value: string) => {
     const updated = [...slots];
     updated[index].date = value;
     setSlots(updated);
   };
 
-  // 🕓 Cập nhật từng giờ trong danh sách times
+  //Cập nhật từng giờ trong danh sách times
   const handleTimeChange = (dateIndex: number, timeIndex: number, value: string) => {
     const updated = [...slots];
     updated[dateIndex].times[timeIndex] = value;
     setSlots(updated);
   };
 
-  // ➕ Thêm khung giờ cho 1 ngày
+  //Thêm khung giờ cho 1 ngày
   const handleAddTime = (index: number) => {
     const updated = [...slots];
     updated[index].times.push('');
     setSlots(updated);
   };
 
-  // ❌ Xóa 1 khung giờ
+  //Xóa 1 khung giờ
   const handleDeleteTime = (dateIndex: number, timeIndex: number) => {
     const updated = [...slots];
     updated[dateIndex].times.splice(timeIndex, 1);
     setSlots(updated);
   };
 
-  // ❌ Xóa 1 ngày
+  //Xóa 1 ngày
   const handleDeleteDate = (index: number) => {
     setSlots(slots.filter((_, i) => i !== index));
   };
 
-  // 💾 Lưu lịch rảnh
+  //Lưu lịch rảnh
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -88,7 +89,7 @@ export default function DoctorAvailabilityPage() {
     }
   };
 
-  // 🔹 View Mode
+  //View Mode
   if (!isEditing) {
     return (
       <motion.div
@@ -144,7 +145,7 @@ export default function DoctorAvailabilityPage() {
     );
   }
 
-  // 🔹 Edit Mode
+  //Edit Mode
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}

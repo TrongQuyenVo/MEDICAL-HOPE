@@ -52,6 +52,15 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Helper: chuyển "/uploads/..." thành URL đầy đủ (giống ProfilePage / Header)
+  const API_SERVER = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+  const getAvatarUrl = (avatarPath?: string | null) => {
+    if (!avatarPath) return null;
+    if (avatarPath.startsWith('http')) return avatarPath;
+    const prefix = API_SERVER.endsWith('/') ? API_SERVER.slice(0, -1) : API_SERVER;
+    return `${prefix}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+  };
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -272,7 +281,15 @@ export default function UsersPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.fullName}`} />
+                        <AvatarImage
+                          src={getAvatarUrl(user.avatar) || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.fullName)}`}
+                          alt={user.fullName}
+                          onError={(e) => {
+                            const img = e.currentTarget as HTMLImageElement;
+                            img.onerror = null;
+                            img.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.fullName)}`;
+                          }}
+                        />
                         <AvatarFallback>{user.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                       <div className="space-y-1">

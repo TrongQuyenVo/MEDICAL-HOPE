@@ -7,7 +7,17 @@ export interface User {
   fullName: string;
   email: string;
   avatar?: string;
+
+  phone?: string;
+  profile?: {
+    dateOfBirth?: string;
+    gender?: 'male' | 'female' | 'other';
+    address?: string;
+    insurance?: string;
+    occupation?: string;
+  };
 }
+
 
 export interface AuthState {
   user: User | null;
@@ -45,7 +55,14 @@ export const useAuthStore = create<AuthState>()(
         const currentUser = get().user;
         if (currentUser) {
           set({
-            user: { ...currentUser, ...updates },
+            user: {
+              ...currentUser,
+              ...updates,
+              profile: {
+                ...currentUser.profile,
+                ...updates.profile,
+              },
+            },
           });
         }
       },

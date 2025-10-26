@@ -26,7 +26,7 @@ export default function AboutPage() {
   const historyMilestones = [
     {
       year: '2015',
-      event: 'Thành lập nền tảng HealthCare+ với sứ mệnh mang y tế miễn phí đến mọi người.',
+      event: 'Thành lập nền tảng MedicalHope+ với sứ mệnh mang y tế miễn phí đến mọi người.',
       description: 'Bắt đầu từ một nhóm nhỏ bác sĩ tình nguyện tại TP. Hồ Chí Minh.'
     },
     {
@@ -109,7 +109,7 @@ export default function AboutPage() {
               <span className="text-sm font-medium">Sứ mệnh từ thiện y tế</span>
             </div>
             <h2 className="healthcare-heading text-4xl font-bold mb-6">
-              HealthCare+
+              MedicalHope+
             </h2>
             <h2 className="healthcare-heading text-4xl font-bold mb-6">
               Nơi Kết Nối Những Trái Tim Nhân Ái
@@ -274,7 +274,7 @@ export default function AboutPage() {
               Hãy Cùng Chúng Tôi Tạo Nên Sự Khác Biệt
             </h2>
             <p className="text-xl mb-8">
-              Mỗi đóng góp của bạn là một hy vọng, một nụ cười, một cuộc đời được thay đổi. Hãy tham gia HealthCare+ ngay hôm nay để lan tỏa yêu thương!
+              Mỗi đóng góp của bạn là một hy vọng, một nụ cười, một cuộc đời được thay đổi. Hãy tham gia MedicalHope+ ngay hôm nay để lan tỏa yêu thương!
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Button

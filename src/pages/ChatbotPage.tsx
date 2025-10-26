@@ -20,7 +20,7 @@ export default function ChatBubble() {
     {
       id: '1',
       type: 'bot',
-      content: 'Xin chào! Tôi là trợ lý ảo của HealthCare+. Tôi có thể giúp bạn về:\n\n• Tìm hiểu về dịch vụ y tế miễn phí\n• Đặt lịch khám bệnh\n• Thông tin về bác sĩ tình nguyện\n• Quyên góp và hỗ trợ y tế\n• Hướng dẫn sử dụng hệ thống\n\nBạn cần hỗ trợ gì hôm nay?',
+      content: 'Xin chào! Tôi là trợ lý ảo của MedicalHope+. Tôi có thể giúp bạn về:\n\n• Tìm hiểu về dịch vụ y tế miễn phí\n• Đặt lịch khám bệnh\n• Thông tin về bác sĩ tình nguyện\n• Quyên góp và hỗ trợ y tế\n• Hướng dẫn sử dụng hệ thống\n\nBạn cần hỗ trợ gì hôm nay?',
       timestamp: new Date(),
     },
   ]);
@@ -99,11 +99,11 @@ export default function ChatBubble() {
     }
 
     if (input.includes('đăng ký') || input.includes('register') || input.includes('sign up')) {
-      return 'Để đăng ký tài khoản trên HealthCare+, bạn có thể:\n\n1. Nhấn vào nút "Đăng ký" trên trang chủ\n2. Điền thông tin cá nhân (họ tên, email, mật khẩu)\n3. Xác nhận email để kích hoạt tài khoản\n4. Đăng nhập và bắt đầu sử dụng các dịch vụ\n\nBạn muốn tôi hướng dẫn chi tiết hơn không?';
+      return 'Để đăng ký tài khoản trên MedicalHope+, bạn có thể:\n\n1. Nhấn vào nút "Đăng ký" trên trang chủ\n2. Điền thông tin cá nhân (họ tên, email, mật khẩu)\n3. Xác nhận email để kích hoạt tài khoản\n4. Đăng nhập và bắt đầu sử dụng các dịch vụ\n\nBạn muốn tôi hướng dẫn chi tiết hơn không?';
     }
 
     if (input.includes('đăng nhập') || input.includes('login') || input.includes('sign in')) {
-      return 'Để đăng nhập vào HealthCare+, bạn có thể:\n\n1. Nhấn vào nút "Đăng nhập" trên trang chủ\n2. Nhập email và mật khẩu\n3. Nhấn "Đăng nhập" để truy cập tài khoản\n\nNếu bạn chưa có tài khoản, bạn có thể [đăng ký](#/register). Bạn cần hỗ trợ thêm không?';
+      return 'Để đăng nhập vào MedicalHope+, bạn có thể:\n\n1. Nhấn vào nút "Đăng nhập" trên trang chủ\n2. Nhập email và mật khẩu\n3. Nhấn "Đăng nhập" để truy cập tài khoản\n\nNếu bạn chưa có tài khoản, bạn có thể [đăng ký](#/register). Bạn cần hỗ trợ thêm không?';
     }
 
     return `Tôi hiểu bạn đang cần hỗ trợ${user ? `, ${user.fullName}` : ''}. Tôi có thể giúp bạn về:\n\n• Tìm hiểu về dịch vụ y tế miễn phí\n• Đặt lịch khám với bác sĩ\n• Thông tin về các chuyên khoa\n• Quyên góp và nhận hỗ trợ\n• Sử dụng các tính năng của hệ thống\n\n${user ? 'Bạn có thể nói rõ hơn về vấn đề cần hỗ trợ không?' : 'Bạn có thể nói rõ hơn về vấn đề cần hỗ trợ, hoặc muốn tìm hiểu về cách đăng ký tài khoản không?'}`;
@@ -155,7 +155,7 @@ export default function ChatBubble() {
               <CardHeader className="p-4 bg-gradient-primary text-white rounded-t-lg">
                 <CardTitle className="flex items-center text-base">
                   <Bot className="mr-2 h-5 w-5" />
-                  Trợ lý ảo HealthCare+
+                  Trợ lý ảo MedicalHope+
                 </CardTitle>
               </CardHeader>
 

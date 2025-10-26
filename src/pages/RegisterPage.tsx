@@ -108,7 +108,7 @@ export default function RegisterPage() {
               {t('register')}
             </CardTitle>
             <CardDescription className="healthcare-subtitle">
-              Tạo tài khoản HealthCare+ mới
+              Tạo tài khoản MedicalHope+ mới
             </CardDescription>
           </CardHeader>
 

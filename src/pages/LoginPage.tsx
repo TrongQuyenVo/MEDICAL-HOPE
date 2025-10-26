@@ -33,14 +33,6 @@ export default function LoginPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const demoRole = urlParams.get('demo');
 
-  // Demo accounts
-  const demoAccounts = {
-    patient: { email: 'patient@demo.com', password: 'demo123', role: 'patient' as const, name: 'Nguyễn Văn Nam (Bệnh nhân)' },
-    doctor: { email: 'doctor@demo.com', password: 'demo123', role: 'doctor' as const, name: 'BS. Trần Thị Lan (Bác sĩ)' },
-    admin: { email: 'admin@demo.com', password: 'demo123', role: 'admin' as const, name: 'Admin System (Quản trị viên)' },
-    charity: { email: 'charity@demo.com', password: 'demo123', role: 'charity_admin' as const, name: 'Phạm Văn Hòa (Quản lý từ thiện)' }
-  };
-
   const {
     register,
     handleSubmit,
@@ -50,14 +42,6 @@ export default function LoginPage() {
     resolver: yupResolver(schema),
   });
 
-  // Auto-fill demo account if demo parameter exists
-  useEffect(() => {
-    if (demoRole && demoAccounts[demoRole as keyof typeof demoAccounts]) {
-      const demo = demoAccounts[demoRole as keyof typeof demoAccounts];
-      setValue('email', demo.email);
-      setValue('password', demo.password);
-    }
-  }, [demoRole, setValue]);
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
@@ -99,31 +83,11 @@ export default function LoginPage() {
               {t('login')}
             </CardTitle>
             <CardDescription className="healthcare-subtitle">
-              Đăng nhập vào tài khoản HealthCare+ của bạn
+              Đăng nhập vào tài khoản MedicalHope+ của bạn
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            {/* Demo Account Info */}
-            {demoRole && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Tài khoản Demo</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Đang sử dụng: <strong>{demoAccounts[demoRole as keyof typeof demoAccounts]?.name}</strong>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Email và mật khẩu đã được điền sẵn
-                </p>
-              </motion.div>
-            )}
-
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">{t('email')}</Label>

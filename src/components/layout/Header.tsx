@@ -13,12 +13,28 @@ import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
 
 export function Header() {
   const { user, logout } = useAuthStore();
   const { unreadCount, theme, setTheme, language, setLanguage } = useAppStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  // Match ProfilePage logic: build absolute URL for avatars stored as "/uploads/..."
+  const API_SERVER = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+  const getAvatarUrl = (avatarPath?: string | null) => {
+    if (!avatarPath) return null;
+    if (avatarPath.startsWith('http')) return avatarPath;
+    const prefix = API_SERVER.endsWith('/') ? API_SERVER.slice(0, -1) : API_SERVER;
+    return `${prefix}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+  };
+
+  useEffect(() => {
+    setAvatarSrc(getAvatarUrl(user?.avatar));
+  }, [user?.avatar]);
 
   const handleLogout = () => {
     logout();
@@ -40,22 +56,9 @@ export function Header() {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-6">
-        <div className="flex items-center space-x-4">
-
-        </div>
+        <div className="flex items-center space-x-4"></div>
 
         <div className="flex items-center space-x-4">
-          {/* Language Toggle */}
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleLanguage}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Globe className="h-5 w-5" />
-          </Button> */}
-
-          {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -65,7 +68,6 @@ export function Header() {
             {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
 
-          {/* Notifications */}
           <Button
             variant="ghost"
             size="icon"
@@ -83,15 +85,31 @@ export function Header() {
             )}
           </Button>
 
-          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.avatar} alt={user.fullName} />
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                    {user.fullName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
+                  {avatarSrc ? (
+                    <AvatarImage
+                      src={avatarSrc}
+                      alt={user.fullName}
+                      onError={() => setAvatarSrc(null)}
+                    />
+                  ) : (
+                    <>
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                        {user.fullName
+                          ? user.fullName
+                            .split(' ')
+                            .map((n) => (n[0] || ''))
+                            .join('')
+                            .slice(0, 2)
+                            .toUpperCase()
+                          : <User className="h-5 w-5" />
+                        }
+                      </AvatarFallback>
+                    </>
+                  )}
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

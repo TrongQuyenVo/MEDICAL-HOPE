@@ -86,7 +86,7 @@ const resources = {
       donationSuccess: 'Quyên góp thành công! Cảm ơn bạn.',
       
       // Landing Page
-      heroTitle: 'Chăm sóc sức khỏe toàn diện cùng HealthCare+',
+      heroTitle: 'Chăm sóc sức khỏe toàn diện cùng MedicalHope+',
       heroSubtitle: 'Nền tảng y tế thông minh kết nối bệnh nhân, bác sĩ và tổ chức từ thiện',
       getStarted: 'Bắt đầu',
       learnMore: 'Tìm hiểu thêm',
@@ -101,7 +101,7 @@ const resources = {
       charitySupportDesc: 'Kết nối với các tổ chức từ thiện để được hỗ trợ chi phí điều trị',
       
       // About
-      aboutTitle: 'Về HealthCare+',
+      aboutTitle: 'Về MedicalHope+',
       aboutDesc: 'Chúng tôi cam kết mang đến dịch vụ chăm sóc sức khỏe chất lượng cao, dễ tiếp cận cho mọi người.',
       
       // Contact
@@ -158,7 +158,7 @@ const resources = {
       
       // Additional translations
       invalidRole: 'Vai trò không hợp lệ',
-      welcome_message: 'Chào mừng bạn đến với hệ thống HealthCare+',
+      welcome_message: 'Chào mừng bạn đến với hệ thống MedicalHope+',
       invalidEmail: 'Email không hợp lệ',
       emailRequired: 'Email là bắt buộc',
       passwordRequired: 'Mật khẩu là bắt buộc',
@@ -262,7 +262,7 @@ const resources = {
       donationSuccess: 'Donation successful! Thank you.',
       
       // Landing Page
-      heroTitle: 'Comprehensive Healthcare with HealthCare+',
+      heroTitle: 'Comprehensive Healthcare with MedicalHope+',
       heroSubtitle: 'Smart medical platform connecting patients, doctors and charities',
       getStarted: 'Get Started',
       learnMore: 'Learn More',
@@ -277,7 +277,7 @@ const resources = {
       charitySupportDesc: 'Connect with charities for treatment cost assistance',
       
       // About
-      aboutTitle: 'About HealthCare+',
+      aboutTitle: 'About MedicalHope+',
       aboutDesc: 'We are committed to providing high-quality, accessible healthcare services for everyone.',
       
       // Contact
@@ -334,7 +334,7 @@ const resources = {
       
       // Additional translations
       invalidRole: 'Invalid role',
-      welcome_message: 'Welcome to HealthCare+ system',
+      welcome_message: 'Welcome to MedicalHope+ system',
       invalidEmail: 'Invalid email',
       emailRequired: 'Email is required',
       passwordRequired: 'Password is required',

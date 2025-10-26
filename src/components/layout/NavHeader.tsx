@@ -47,7 +47,7 @@ export default function NavHeader() {
               <Heart className="h-5 w-5 text-white" />
             </div>
             <div>
-              <span className="healthcare-heading text-xl font-bold">HealthCare+</span>
+              <span className="healthcare-heading text-xl font-bold">MedicalHope+</span>
               <p className="text-xs text-muted-foreground">Y tế từ thiện</p>
             </div>
           </div>

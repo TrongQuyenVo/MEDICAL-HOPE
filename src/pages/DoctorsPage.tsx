@@ -33,13 +33,11 @@ export default function DoctorsPage() {
       setError(null);
       try {
         const response = await doctorsAPI.getAll(); // Sử dụng doctorsAPI.getAll
-        console.log('API /doctors response:', response.data); // Debug API response
 
         const doctorsData = Array.isArray(response.data.doctors)
           ? response.data.doctors
           : [];
         setDoctors(doctorsData);
-        console.log('Doctors state:', doctorsData); // Debug state
         if (doctorsData.length === 0) {
           setError('Không có bác sĩ nào được tìm thấy trong hệ thống.');
           toast('Không có bác sĩ nào được tìm thấy trong hệ thống.');
@@ -56,7 +54,6 @@ export default function DoctorsPage() {
   }, [isAuthenticated, token, navigate]);
 
   const handleBookAppointment = (doctor) => {
-    console.log('Selected doctor:', doctor); // Debug selected doctor
     setSelectedDoctor(doctor);
     setOpenDialog(true);
   };
@@ -158,6 +155,10 @@ export default function DoctorsPage() {
             specialty: selectedDoctor.specialty || 'Không xác định',
             avatar: selectedDoctor.userId?.avatar || selectedDoctor.avatar || '',
             experience: selectedDoctor.experience || 0,
+          }}
+          onSuccess={() => {
+            toast.success("Đặt lịch hẹn thành công!");
+            setOpenDialog(false);
           }}
         />
       )}

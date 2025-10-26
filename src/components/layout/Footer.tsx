@@ -17,10 +17,10 @@ export default function Footer() {
               <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
                 <Heart className="h-5 w-5 text-white" />
               </div>
-              <span className="healthcare-heading text-xl font-bold">HealthCare+</span>
+              <span className="healthcare-heading text-xl font-bold">MedicalHope+</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              HealthCare+ là nền tảng y tế từ thiện, kết nối bác sĩ, tình nguyện viên và bệnh nhân để mang lại dịch vụ y tế miễn phí, chất lượng cao.
+              MedicalHope+ là nền tảng y tế từ thiện, kết nối bác sĩ, tình nguyện viên và bệnh nhân để mang lại dịch vụ y tế miễn phí, chất lượng cao.
             </p>
           </div>
 
@@ -71,7 +71,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          &copy; 2025 HealthCare+. Mọi quyền được bảo lưu.
+          &copy; 2025 MedicalHope+. Mọi quyền được bảo lưu.
         </div>
       </div>
 

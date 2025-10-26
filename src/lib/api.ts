@@ -74,6 +74,7 @@ export const authAPI = {
 export const usersAPI = {
   getAllUsers: (params?: any) => api.get('/users', { params }),
   updateProfile: (data: any) => api.put('/users/profile', data),
+  
   changePassword: (data: any) => api.put('/users/change-password', data),
   suspendUser: (id: string) => api.patch(`/users/${id}/suspend`),
   activateUser: (id: string) => api.patch(`/users/${id}/activate`),
@@ -123,7 +124,9 @@ export const donationsAPI = {
 // 🤝 ASSISTANCE API
 // ==========================
 export const assistanceAPI = {
-  create: (data: any) => api.post('/assistance', data),
+  create: (data: FormData) => api.post('/assistance', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   getAll: (params?: any) => api.get('/assistance', { params }),
   updateStatus: (id: string, data: any) => api.patch(`/assistance/${id}/status`, data),
 };
@@ -153,6 +156,38 @@ export const chatbotAPI = {
   sendMessage: (data: { message: string; sessionId: string }) =>
     api.post('/chatbot/chat', data),
   getHistory: (sessionId: string) => api.get(`/chatbot/history/${sessionId}`),
+};
+
+// ==========================
+// 🎗️ CAMPAIGNS API
+// ==========================
+export const campaignsAPI = {
+  getAll: () => api.get('/campaigns'),
+  create: (data: FormData) => api.post('/campaigns', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update: (id: string, data: FormData) => api.put(`/campaigns/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  approve: (id: string) => api.patch(`/campaigns/${id}/approve`),
+  delete: (id: string) => api.delete(`/campaigns/${id}`),
+};
+
+// ==========================
+// 🤝 PARTNERS API
+// ==========================
+export const partnersAPI = {
+  getAll: (params?: any) => api.get('/partners', { params }),
+  getById: (id: string) => api.get(`/partners/${id}`),
+  create: (data: FormData) =>
+    api.post('/partners', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  update: (id: string, data: FormData) =>
+    api.put(`/partners/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  delete: (id: string) => api.delete(`/partners/${id}`),
 };
 
 // ==========================

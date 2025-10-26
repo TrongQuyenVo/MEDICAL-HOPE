@@ -4,7 +4,7 @@ import {
   Home, Building2, HandHeart, Shield, Award, CheckCircle2,
   HeartHandshake, UserPlus, Activity, Sparkles,
   ExternalLink, Bus, Soup, DollarSign,
-  Send
+  Send, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,22 +21,10 @@ import ScrollToTop from '@/components/layout/ScrollToTop';
 import ChatBubble from './ChatbotPage';
 import { useState, useEffect } from 'react';
 import DonationForm from '@/components/form/DonationForm';
-import { partnersAPI } from '@/lib/api';
-import bachmai from '@/assets/bachmai.png';
-import choray from '@/assets/choray.png';
-import benhvienk from '@/assets/k.png';
-import redcross from '@/assets/hoichuthapdo.jpg';
-import vinguoingheo from '@/assets/quyvinguoingheo.png';
-import unicef from '@/assets/unicef.jpg';
-import who from '@/assets/who.png';
-import mfs from '@/assets/msf.svg';
-import hoiyhoc from '@/assets/hoiyhoc.jpg';
-import thientam from '@/assets/thientam.png';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@radix-ui/react-dialog';
-import { DialogFooter, DialogHeader } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import TestimonialForm from '@/components/form/TestimonialForm';
+import { partnersAPI, testimonialsAPI } from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import toast from 'react-hot-toast';
 
 interface Partner {
   _id: string;
@@ -56,6 +44,16 @@ interface Partner {
   isActive: boolean;
 }
 
+interface Testimonial {
+  _id?: string;
+  name: string;
+  age: string;
+  location: string;
+  content: string;
+  treatment: string;
+  visible?: boolean;
+}
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [openForm, setOpenForm] = useState(false);
@@ -65,7 +63,9 @@ export default function LandingPage() {
   const [error, setError] = useState<string | null>(null);
   const API_SERVER = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
   const [partnersFromDB, setPartnersFromDB] = useState<Partner[]>([]);
-  const [openTestimonialForm, setOpenTestimonialForm] = useState(false);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [testimonialLoading, setTestimonialLoading] = useState(true);
+  const [testimonialError, setTestimonialError] = useState<string | null>(null);
   const [testimonialFormData, setTestimonialFormData] = useState({
     name: '',
     age: '',
@@ -73,9 +73,25 @@ export default function LandingPage() {
     treatment: '',
     content: '',
   });
-  const [testimonialError, setTestimonialError] = useState<string | null>(null);
+  const [openTestimonialForm, setOpenTestimonialForm] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleTestimonialFormSubmit = () => {
+  // Lấy danh sách đánh giá từ API
+  const fetchTestimonials = async () => {
+    try {
+      setTestimonialLoading(true);
+      setTestimonialError(null);
+      const res = await testimonialsAPI.getAll();
+      setTestimonials(res.data);
+      setTestimonialLoading(false);
+    } catch (err: any) {
+      setTestimonialError(err?.response?.data?.message || 'Lỗi khi tải danh sách đánh giá');
+      setTestimonialLoading(false);
+    }
+  };
+
+  // Gửi đánh giá mới qua API
+  const handleTestimonialFormSubmit = async () => {
     // Kiểm tra form
     if (
       !testimonialFormData.name ||
@@ -88,22 +104,18 @@ export default function LandingPage() {
       return;
     }
 
-    // Thêm đánh giá mới vào danh sách (cho mục đích demo)
-    setTestimonials((prev) => [
-      ...prev,
-      {
-        name: testimonialFormData.name,
-        age: testimonialFormData.age,
-        location: testimonialFormData.location,
-        treatment: testimonialFormData.treatment,
-        content: testimonialFormData.content,
-      },
-    ]);
-
-    // Reset form và đóng dialog
-    setTestimonialFormData({ name: '', age: '', location: '', treatment: '', content: '' });
-    setTestimonialError(null);
-    setOpenTestimonialForm(false);
+    try {
+      await testimonialsAPI.create(testimonialFormData);
+      toast.success('Gửi đánh giá thành công!');
+      // Reset form và đóng dialog
+      setTestimonialFormData({ name: '', age: '', location: '', treatment: '', content: '' });
+      setTestimonialError(null);
+      setOpenTestimonialForm(false);
+      // Tải lại danh sách đánh giá
+      fetchTestimonials();
+    } catch (err: any) {
+      setTestimonialError(err?.response?.data?.message || 'Lỗi khi gửi đánh giá');
+    }
   };
 
   const handleTestimonialInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -111,29 +123,11 @@ export default function LandingPage() {
     setTestimonialError(null);
   };
 
-  const [testimonials, setTestimonials] = useState([
-    {
-      name: 'Bà Nguyễn Thị Hoa',
-      age: '68 tuổi',
-      location: 'Hà Giang',
-      content: 'Tôi không thể tin được mình được khám bệnh miễn phí với đội ngũ bác sĩ tận tâm như vậy. Các con đã mang ánh sáng đến với cuộc đời tôi.',
-      treatment: 'Phẫu thuật mắt đục thủy tinh thể'
-    },
-    {
-      name: 'Em Trần Văn Minh',
-      age: '12 tuổi',
-      location: 'Nghệ An',
-      content: 'Em rất vui vì được các bác sĩ tặng kính và giúp em nhìn rõ bảng đen hơn. Giờ em học giỏi hơn rất nhiều!',
-      treatment: 'Khám mắt và tặng kính cận'
-    },
-    {
-      name: 'Ông Lê Văn Bình',
-      age: '75 tuổi',
-      location: 'Quảng Trị',
-      content: 'Những ngày còn lại của cuộc đời được các bạn chăm sóc, tôi cảm thấy vô cùng ấm lòng. Cảm ơn các bạn rất nhiều.',
-      treatment: 'Điều trị tim mạch và tặng thuốc'
-    }
-  ]);
+  // Reset form
+  const handleTestimonialFormReset = () => {
+    setTestimonialFormData({ name: '', age: '', location: '', treatment: '', content: '' });
+    setTestimonialError(null);
+  };
 
   // Lấy dữ liệu đối tác từ database
   useEffect(() => {
@@ -178,6 +172,7 @@ export default function LandingPage() {
     };
 
     fetchPartners();
+    fetchTestimonials();
   }, []);
 
   const volunteerEvents = [
@@ -217,48 +212,6 @@ export default function LandingPage() {
       participants: '60+ tình nguyện viên',
       beneficiaries: '300+ bệnh nhân'
     }
-  ];
-
-  const quickLinks = [
-    {
-      icon: Stethoscope,
-      title: 'Dịch Vụ Y Tế',
-      description: 'Khám chữa bệnh miễn phí với đội ngũ bác sĩ chuyên môn cao',
-      path: '/services'
-    },
-    {
-      icon: Heart,
-      title: 'Chương Trình',
-      description: 'Tham gia các hoạt động thiện nguyện ý nghĩa trên cả nước',
-      path: '/programs'
-    },
-    {
-      icon: Building2,
-      title: 'Tổ Chức',
-      description: 'Kết nối với mạng lưới tổ chức từ thiện uy tín',
-      path: '/organizations'
-    },
-    {
-      icon: HandHeart,
-      title: 'Tình Nguyện Viên',
-      description: 'Đăng ký trở thành tình nguyện viên, lan tỏa yêu thương',
-      path: '/register'
-    }
-  ];
-
-  // Testimonials data is now managed through the testimonials state
-
-  const partners = [
-    { name: 'Bệnh viện Bạch Mai', category: 'Bệnh viện', website: 'https://bachmai.gov.vn', logo: bachmai },
-    { name: 'Bệnh viện Chợ Rẫy', category: 'Bệnh viện', website: 'https://bvchoray.vn/', logo: choray },
-    { name: 'Bệnh viện K', category: 'Bệnh viện', website: 'https://benhvienk.vn', logo: benhvienk },
-    { name: 'Hội Chữ thập đỏ VN', category: 'Tổ chức từ thiện', website: 'https://redcross.org.vn', logo: redcross },
-    { name: 'Quỹ Vì người nghèo', category: 'Quỹ từ thiện', website: 'https://vinguoingheo.vn/', logo: vinguoingheo },
-    { name: 'UNICEF Vietnam', category: 'Tổ chức quốc tế', website: 'https://unicef.org/vietnam', logo: unicef },
-    { name: 'WHO Vietnam', category: 'Tổ chức quốc tế', website: 'https://who.int/vietnam', logo: who },
-    { name: 'Bác sĩ không biên giới', category: 'Tổ chức quốc tế', website: 'https://msf.org', logo: mfs },
-    { name: 'Hội Y học Việt Nam', category: 'Hiệp hội', website: 'http://tonghoiyhoc.vn/', logo: hoiyhoc },
-    { name: 'Quỹ Thiện Tâm', category: 'Quỹ từ thiện', website: 'https://vingroup.net/linh-vuc-hoat-dong/thien-nguyen-br-xa-hoi/2476/quy-thien-tam', logo: thientam },
   ];
 
   const impactStories = [
@@ -312,29 +265,6 @@ export default function LandingPage() {
       title: 'Khám & Điều trị',
       description: 'Thực hiện khám chữa bệnh miễn phí với sự tận tâm và chuyên nghiệp',
       icon: Heart
-    }
-  ];
-
-  const coreValues = [
-    {
-      icon: HeartHandshake,
-      title: 'Nhân ái',
-      description: 'Mỗi hành động của chúng tôi xuất phát từ trái tim, với mong muốn mang lại hy vọng và sức khỏe cho mọi người.'
-    },
-    {
-      icon: Shield,
-      title: 'Uy tín',
-      description: 'Cam kết minh bạch, chuyên nghiệp, và đáng tin cậy trong mọi hoạt động y tế thiện nguyện.'
-    },
-    {
-      icon: Activity,
-      title: 'Hiệu quả',
-      description: 'Tối ưu hóa nguồn lực để hỗ trợ nhiều người nhất có thể, với chất lượng dịch vụ cao nhất.'
-    },
-    {
-      icon: Sparkles,
-      title: 'Lan tỏa',
-      description: 'Khơi dậy tinh thần thiện nguyện, kết nối cộng đồng để cùng nhau tạo nên thay đổi tích cực.'
     }
   ];
 
@@ -649,126 +579,111 @@ export default function LandingPage() {
               Nghe những lời chia sẻ chân thành từ những người đã được MedicalHope+ đồng hành.
             </p>
           </motion.div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={`${testimonial.name}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="healthcare-card h-full">
-                  <CardContent className="pt-6">
-                    <div className="mb-4">
-                      <p className="text-muted-foreground italic mb-4">"{testimonial.content}"</p>
-                    </div>
-                    <div className="border-t pt-4">
-                      <p className="font-semibold">{testimonial.name}, {testimonial.age}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.location}</p>
-                      <p className="text-sm text-primary">{testimonial.treatment}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-          {/* Form nhập đánh giá */}
+          {testimonialLoading ? (
+            <div className="text-center text-muted-foreground">Đang tải đánh giá...</div>
+          ) : testimonialError ? (
+            <div className="text-center text-red-500">{testimonialError}</div>
+          ) : testimonials.length === 0 ? (
+            <div className="text-center text-muted-foreground">Chưa có đánh giá nào.</div>
+          ) : (
+            <div className="max-w-7xl mx-auto px-2">
+              <div className="relative max-w-6xl mx-auto">
+                {/* Nút mũi tên trái */}
+                {currentIndex > 0 && (
+                  <button
+                    onClick={() => setCurrentIndex((prev) => Math.max(prev - 4, 0))}
+                    className="absolute -left-12 top-1/2 transform -translate-y-1/2 bg-primary/10 hover:bg-primary/20 text-primary p-2 rounded-full shadow-md transition"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                )}
+
+                {/* Danh sách hiển thị */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {testimonials
+                    .filter((t) => t.visible !== false)
+                    .slice(currentIndex, currentIndex + 4)
+                    .map((testimonial, index) => (
+                      <motion.div
+                        key={`${testimonial._id || index}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <Card className="healthcare-card h-full">
+                          <CardContent className="pt-6">
+                            <div className="mb-4">
+                              <p className="text-muted-foreground italic mb-4">
+                                "{testimonial.content}"
+                              </p>
+                            </div>
+                            <div className="border-t pt-4">
+                              <p className="font-semibold">
+                                {testimonial.name}, {testimonial.age} tuổi
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {testimonial.location}
+                              </p>
+                              <p className="text-sm text-primary">
+                                {testimonial.treatment}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                </div>
+
+                {/* Nút mũi tên phải */}
+                {currentIndex + 4 < testimonials.length && (
+                  <button
+                    onClick={() =>
+                      setCurrentIndex((prev) => Math.min(prev + 4, testimonials.length - 4))
+                    }
+                    className="absolute -right-12 top-1/2 transform -translate-y-1/2 bg-primary/10 hover:bg-primary/20 text-primary p-2 rounded-full shadow-md transition"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {/* Nút Gửi lời yêu thương */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mt-12 max-w-2xl mx-auto"
+            className="mt-12 text-center"
           >
-            <Card className="healthcare-card">
-              <CardHeader>
-                <CardTitle>Chia sẻ câu chuyện của bạn</CardTitle>
-                <CardDescription>
-                  Hãy chia sẻ trải nghiệm của bạn với MedicalHope+. Thông tin của bạn sẽ giúp lan tỏa tinh thần nhân ái.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {testimonialError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-                    {testimonialError}
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Họ và tên *</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={testimonialFormData.name}
-                      onChange={handleTestimonialInputChange}
-                      placeholder="VD: Nguyễn Văn A"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="age">Tuổi *</Label>
-                    <Input
-                      id="age"
-                      name="age"
-                      type="text"
-                      value={testimonialFormData.age}
-                      onChange={handleTestimonialInputChange}
-                      placeholder="VD: 45 tuổi"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="location">Địa điểm *</Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    value={testimonialFormData.location}
-                    onChange={handleTestimonialInputChange}
-                    placeholder="VD: Hà Nội"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="treatment">Chương trình được khám miễn phí *</Label>
-                  <Input
-                    id="treatment"
-                    name="treatment"
-                    value={testimonialFormData.treatment}
-                    onChange={handleTestimonialInputChange}
-                    placeholder="VD: Khám tim miễn phí"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="content">Câu chuyện của bạn *</Label>
-                  <Textarea
-                    id="content"
-                    name="content"
-                    value={testimonialFormData.content}
-                    onChange={handleTestimonialInputChange}
-                    placeholder="Chia sẻ trải nghiệm của bạn..."
-                    rows={5}
-                    required
-                  />
-                </div>
-                <div className="flex justify-end gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      setTestimonialFormData({ name: '', age: '', location: '', treatment: '', content: '' })
-                    }
-                  >
-                    Xóa
-                  </Button>
-                  <Button className="btn-healthcare" onClick={handleTestimonialFormSubmit}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Gửi câu chuyện
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <Button
+              size="lg"
+              className="btn-healthcare"
+              onClick={() => setOpenTestimonialForm(true)}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Gửi lời yêu thương
+            </Button>
           </motion.div>
+
+          {/* Dialog cho form đánh giá */}
+          <Dialog open={openTestimonialForm} onOpenChange={setOpenTestimonialForm}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Chia sẻ câu chuyện của bạn</DialogTitle>
+                <DialogDescription>
+                  Hãy chia sẻ trải nghiệm của bạn với MedicalHope+. Thông tin của bạn sẽ giúp lan tỏa tinh thần nhân ái.
+                </DialogDescription>
+              </DialogHeader>
+              <TestimonialForm
+                formData={testimonialFormData}
+                error={testimonialError}
+                onInputChange={handleTestimonialInputChange}
+                onSubmit={handleTestimonialFormSubmit}
+                onReset={handleTestimonialFormReset}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </section>
 
@@ -1018,7 +933,6 @@ export default function LandingPage() {
               Chúng tôi tự hào hợp tác với các tổ chức y tế và từ thiện hàng đầu để mang lại dịch vụ y tế chất lượng nhất cho cộng đồng.
             </p>
           </motion.div>
-
           {loading ? (
             <div className="text-center text-muted-foreground">Đang tải dữ liệu đối tác...</div>
           ) : error ? (
@@ -1069,7 +983,6 @@ export default function LandingPage() {
               ))}
             </div>
           )}
-
           <div className="mt-12 text-center">
             <Button
               size="lg"
@@ -1081,7 +994,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
 
       {/* Call to Action Section */}
       <section className="py-20 bg-gradient-to-r from-primary/90 to-secondary text-white">

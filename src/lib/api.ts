@@ -191,6 +191,15 @@ export const partnersAPI = {
 };
 
 // ==========================
+// 📝 TESTIMONIALS API
+// ==========================
+export const testimonialsAPI = {
+  getAll: (params?: any) => api.get('/testimonials', { params }),
+  create: (data: any) => api.post('/testimonials', data),
+  delete: (id: string) => api.delete(`/testimonials/${id}`),
+};
+
+// ==========================
 // 📦 EXPORT MẶC ĐỊNH
 // ==========================
 export default api;

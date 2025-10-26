@@ -38,6 +38,7 @@ import PaymentInvalid from "./pages/payment/PaymentInvalid";
 import ExtendedBusPartnerList from "./pages/ExtendedBusPartnerList";
 import ExtendedFoodDistributionList from "./pages/ExtendedFoodDistributionList";
 import { PartnerManagement } from "./pages/PartnerManagement";
+import AdminTestimonials from "./pages/AdminTestimonials";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -228,6 +229,15 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <ChatbotPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/testimonials"
+                element={
+                  <ProtectedRoute roles={["admin"]}>
+                    <AdminTestimonials />
                   </ProtectedRoute>
                 }
               />

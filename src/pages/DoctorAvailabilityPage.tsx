@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Calendar, Clock, Save, PlusCircle } from 'lucide-react';
 import api from '@/lib/api';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 export default function DoctorAvailabilityPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -255,6 +257,8 @@ export default function DoctorAvailabilityPage() {
           </div>
         </CardContent>
       </Card>
+      <ScrollToTop />
+            <ChatBubble />
     </motion.div>
   );
 }

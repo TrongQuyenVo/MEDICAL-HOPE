@@ -13,6 +13,7 @@ import communityHealthImg from '@/assets/community-health.jpg';
 import Header from '@/components/layout/NavHeader';
 import Footer from '@/components/layout/Footer';
 import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 export default function ProgramsPage() {
   const navigate = useNavigate();
@@ -148,6 +149,7 @@ export default function ProgramsPage() {
       </div>
       <Footer />
       <ScrollToTop />
+      <ChatBubble />
     </div>
   );
 }

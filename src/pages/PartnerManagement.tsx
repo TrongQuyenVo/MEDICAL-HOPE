@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/authStore';
 import { partnersAPI } from '@/lib/api';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 interface Partner {
   _id: string;
@@ -531,7 +533,7 @@ export function PartnerManagement() {
 
                       return (
                         <tr key={partner._id} className="hover:bg-muted/50 transition-colors">
-                          <td className="px-6 py-4 w-[80px]">
+                          <td className="px-6 py-4 w-[50px]">
                             {logoUrl ? (
                               <img
                                 src={logoUrl}
@@ -547,8 +549,8 @@ export function PartnerManagement() {
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 font-medium w-[150px] truncate">{partner.name}</td>
-                          <td className="px-6 py-4 w-[120px]">
+                          <td className="px-1 py-4 font-medium w-[100px]">{partner.name}</td>
+                          <td className="px-3 py-4 w-[80px]">
                             <Badge variant="secondary">
                               {partner.type === 'hospital' && 'Bệnh viện'}
                               {partner.type === 'charity' && 'Từ thiện'}
@@ -558,7 +560,7 @@ export function PartnerManagement() {
                               {partner.type === 'food_distribution' && 'Phát đồ ăn'}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 text-sm w-[250px]">
+                          <td className="px-6 py-4 text-sm w-[230px]">
                             {/* Website luôn hiển thị nếu có */}
                             {partner.website && (
                               <div className="mb-2">
@@ -655,7 +657,7 @@ export function PartnerManagement() {
                               {partner.isActive ? 'Hoạt động' : 'Tạm dừng'}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 text-right space-x-2 w-[120px]">
+                          <td className="px-6 py-4 text-right space-x-2 w-[100px]">
                             <Button size="sm" variant="ghost" onClick={() => handleEditPartner(partner)}>
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -673,6 +675,8 @@ export function PartnerManagement() {
           </div>
         )}
       </div>
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

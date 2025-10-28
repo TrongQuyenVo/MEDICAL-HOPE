@@ -3,6 +3,8 @@ import { Bell, Calendar, Gift, AlertTriangle, CheckCircle, Clock } from 'lucide-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 export default function NotificationsPage() {
   const notifications = [
@@ -74,10 +76,10 @@ export default function NotificationsPage() {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(hours / 24);
-    
+
     if (days > 0) {
       return `${days} ngày trước`;
     } else if (hours > 0) {
@@ -169,23 +171,21 @@ export default function NotificationsPage() {
             {notifications.map((notification, index) => {
               const Icon = getNotificationIcon(notification.type);
               const iconColor = getNotificationColor(notification.type);
-              
+
               return (
                 <motion.div
                   key={notification.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className={`flex items-start space-x-4 p-4 rounded-lg border transition-colors hover:bg-muted/50 ${
-                    !notification.read ? 'bg-primary/5 border-primary/20' : ''
-                  }`}
+                  className={`flex items-start space-x-4 p-4 rounded-lg border transition-colors hover:bg-muted/50 ${!notification.read ? 'bg-primary/5 border-primary/20' : ''
+                    }`}
                 >
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center ${
-                    !notification.read ? 'bg-primary/10' : ''
-                  }`}>
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center ${!notification.read ? 'bg-primary/10' : ''
+                    }`}>
                     <Icon className={`h-5 w-5 ${iconColor}`} />
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <div>
@@ -215,6 +215,8 @@ export default function NotificationsPage() {
           </div>
         </CardContent>
       </Card>
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

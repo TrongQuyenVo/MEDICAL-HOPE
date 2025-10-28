@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 interface Patient {
   id: string;
@@ -383,6 +385,8 @@ export default function PatientsPage() {
           </Button>
         </div>
       )}
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

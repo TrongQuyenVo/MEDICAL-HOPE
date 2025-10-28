@@ -8,6 +8,7 @@ import Header from '@/components/layout/NavHeader';
 import Footer from '@/components/layout/Footer';
 import ScrollToTop from '@/components/layout/ScrollToTop';
 import { partnersAPI } from '@/lib/api';
+import ChatBubble from './ChatbotPage';
 
 interface Partner {
   _id: string;
@@ -188,6 +189,7 @@ export default function OrganizationsPage() {
       </div>
       <Footer />
       <ScrollToTop />
+      <ChatBubble />
     </div>
   );
 }

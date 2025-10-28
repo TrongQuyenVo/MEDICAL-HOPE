@@ -10,6 +10,8 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { doctorsAPI } from '@/lib/api'; // Import doctorsAPI từ api.ts
 import BookAppointmentForm from '@/components/form/BookAppointmentForm';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 export default function DoctorsPage() {
   const { isAuthenticated, token } = useAuthStore(); // Lấy trạng thái xác thực và token
@@ -162,6 +164,8 @@ export default function DoctorsPage() {
           }}
         />
       )}
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

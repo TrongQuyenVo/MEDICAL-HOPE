@@ -25,6 +25,7 @@ import TestimonialForm from '@/components/form/TestimonialForm';
 import { partnersAPI, testimonialsAPI } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import toast from 'react-hot-toast';
+import { HeartAnimation } from '@/components/layout/HeartAnimation';
 
 interface Partner {
   _id: string;
@@ -52,6 +53,7 @@ interface Testimonial {
   content: string;
   treatment: string;
   visible?: boolean;
+  likes?: number;
 }
 
 export default function LandingPage() {
@@ -75,6 +77,9 @@ export default function LandingPage() {
   });
   const [openTestimonialForm, setOpenTestimonialForm] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [likedTestimonials, setLikedTestimonials] = useState<string[]>([]);
+  const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null);
+
 
   // Lấy danh sách đánh giá từ API
   const fetchTestimonials = async () => {
@@ -129,6 +134,21 @@ export default function LandingPage() {
     setTestimonialError(null);
   };
 
+  useEffect(() => {
+    const liked = Object.keys(localStorage)
+      .filter((key) => key.startsWith("liked_"))
+      .map((key) => key.replace("liked_", ""));
+    setLikedTestimonials(liked);
+  }, []);
+
+  // 🔢 Hàm định dạng số like (ví dụ: 999 -> 999, 1200 -> 1.2k, 15000 -> 15k)
+  const formatLikeCount = (num?: number) => {
+    if (!num) return 0;
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+    return num;
+  };
+
   // Lấy dữ liệu đối tác từ database
   useEffect(() => {
     const fetchPartners = async () => {
@@ -174,6 +194,36 @@ export default function LandingPage() {
     fetchPartners();
     fetchTestimonials();
   }, []);
+
+  const handleLike = async (id: string) => {
+    // Nếu đã like thì không cho nhấn nữa
+    if (localStorage.getItem(`liked_${id}`)) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_API_URL_BACKEND}/api/testimonials/${id}/like`,
+        { method: "PUT" }
+      );
+
+      if (res.ok) {
+        // ✅ Lưu vào localStorage
+        localStorage.setItem(`liked_${id}`, "true");
+
+        // ✅ Cập nhật giao diện ngay
+        setLikedTestimonials((prev) => [...prev, id]);
+
+        // ✅ Cập nhật số lượng tim trên client (không cần reload toàn bộ)
+        setTestimonials((prev) =>
+          prev.map((t) =>
+            t._id === id ? { ...t, likes: (t.likes || 0) + 1 } : t
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi thả tim:", error);
+    }
+  };
+
 
   const volunteerEvents = [
     {
@@ -560,8 +610,10 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-background relative">
         <div className="container mx-auto px-4">
+          {/* Thêm HeartAnimation vào đây */}
+          <HeartAnimation />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -579,6 +631,8 @@ export default function LandingPage() {
               Nghe những lời chia sẻ chân thành từ những người đã được MedicalHope+ đồng hành.
             </p>
           </motion.div>
+
+          {/* Phần còn lại của section giữ nguyên */}
           {testimonialLoading ? (
             <div className="text-center text-muted-foreground">Đang tải đánh giá...</div>
           ) : testimonialError ? (
@@ -591,7 +645,7 @@ export default function LandingPage() {
                 {/* Nút mũi tên trái */}
                 {currentIndex > 0 && (
                   <button
-                    onClick={() => setCurrentIndex((prev) => Math.max(prev - 4, 0))}
+                    onClick={() => setCurrentIndex((prev) => Math.max(prev - 3, 0))}
                     className="absolute -left-12 top-1/2 transform -translate-y-1/2 bg-primary/10 hover:bg-primary/20 text-primary p-2 rounded-full shadow-md transition"
                   >
                     <ChevronLeft className="h-6 w-6" />
@@ -599,10 +653,10 @@ export default function LandingPage() {
                 )}
 
                 {/* Danh sách hiển thị */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {testimonials
                     .filter((t) => t.visible !== false)
-                    .slice(currentIndex, currentIndex + 4)
+                    .slice(currentIndex, currentIndex + 3)
                     .map((testimonial, index) => (
                       <motion.div
                         key={`${testimonial._id || index}`}
@@ -610,24 +664,48 @@ export default function LandingPage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: index * 0.1 }}
+                        onClick={() => setSelectedTestimonial(testimonial)}
+                        className="cursor-pointer"
                       >
                         <Card className="healthcare-card h-full">
                           <CardContent className="pt-6">
                             <div className="mb-4">
-                              <p className="text-muted-foreground italic mb-4">
+                              <p
+                                className="text-muted-foreground italic mb-4 line-clamp-3"
+                                title={testimonial.content}
+                              >
                                 "{testimonial.content}"
                               </p>
                             </div>
-                            <div className="border-t pt-4">
-                              <p className="font-semibold">
-                                {testimonial.name}, {testimonial.age} tuổi
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {testimonial.location}
-                              </p>
-                              <p className="text-sm text-primary">
-                                {testimonial.treatment}
-                              </p>
+                            <div className="border-t pt-4 flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold">
+                                  {testimonial.name}, {testimonial.age} tuổi
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {testimonial.location}
+                                </p>
+                                <p className="text-sm text-primary">{testimonial.treatment}</p>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLike(testimonial._id);
+                                }}
+                                disabled={likedTestimonials.includes(testimonial._id)}
+                                className={`flex items-center gap-1 text-sm transition ${likedTestimonials.includes(testimonial._id)
+                                  ? "text-red-500"
+                                  : "text-muted-foreground hover:text-red-400"
+                                  }`}
+                              >
+                                <Heart
+                                  className={`h-5 w-5 transition-transform duration-200 ${likedTestimonials.includes(testimonial._id)
+                                    ? "fill-red-500 scale-110"
+                                    : "fill-none hover:scale-110"
+                                    }`}
+                                />
+                                <span>{formatLikeCount(testimonial.likes)}</span>
+                              </button>
                             </div>
                           </CardContent>
                         </Card>
@@ -636,10 +714,12 @@ export default function LandingPage() {
                 </div>
 
                 {/* Nút mũi tên phải */}
-                {currentIndex + 4 < testimonials.length && (
+                {currentIndex + 3 < testimonials.length && (
                   <button
                     onClick={() =>
-                      setCurrentIndex((prev) => Math.min(prev + 4, testimonials.length - 4))
+                      setCurrentIndex((prev) =>
+                        Math.min(prev + 3, testimonials.length - 3)
+                      )
                     }
                     className="absolute -right-12 top-1/2 transform -translate-y-1/2 bg-primary/10 hover:bg-primary/20 text-primary p-2 rounded-full shadow-md transition"
                   >
@@ -649,7 +729,7 @@ export default function LandingPage() {
               </div>
             </div>
           )}
-          {/* Nút Gửi lời yêu thương */}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -682,6 +762,33 @@ export default function LandingPage() {
                 onSubmit={handleTestimonialFormSubmit}
                 onReset={handleTestimonialFormReset}
               />
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog cho chi tiết đánh giá */}
+          <Dialog
+            open={!!selectedTestimonial}
+            onOpenChange={() => setSelectedTestimonial(null)}
+          >
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedTestimonial?.name}, {selectedTestimonial?.age} tuổi
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedTestimonial?.location} | {selectedTestimonial?.treatment}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="mt-4 space-y-2">
+                <p className="text-muted-foreground">{selectedTestimonial?.content}</p>
+
+                {/* Hiển thị số like */}
+                <div className="flex items-center gap-1 text-red-500 font-medium mt-2">
+                  <Heart className="h-5 w-5 fill-red-500" />
+                  <span>{formatLikeCount(selectedTestimonial?.likes)}</span>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -794,7 +901,7 @@ export default function LandingPage() {
             <div className="text-center text-muted-foreground">Hiện chưa có đối tác vận chuyển nào.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {busPartners.map((partner, index) => (
+              {busPartners.slice(0, 6).map((partner, index) => (
                 <motion.div
                   key={partner._id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -878,7 +985,7 @@ export default function LandingPage() {
             <div className="text-center text-muted-foreground">Hiện chưa có điểm phát đồ ăn nào.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {foodDistributionPoints.map((point, index) => (
+              {foodDistributionPoints.slice(0, 6).map((point, index) => (
                 <motion.div
                   key={point._id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -889,7 +996,18 @@ export default function LandingPage() {
                 >
                   <div className="flex flex-col items-center text-center">
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md overflow-hidden group-hover:scale-110 transition-transform duration-300">
-                      <Soup className="h-12 w-12 text-primary" />
+                      <img
+                        src={
+                          point.logo
+                            ? (point.logo.startsWith('http') ? point.logo : `${API_SERVER}${point.logo}`)
+                            : '/default-logo.png'
+                        }
+                        alt={point.name}
+                        className="h-12 w-12 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default-logo.png';
+                        }}
+                      />
                     </div>
                     <h3 className="text-lg font-bold text-foreground">{point.details?.location || 'Chưa cung cấp địa điểm'}</h3>
                     <p className="text-sm text-muted-foreground mb-2">Lịch: {point.details?.schedule || 'Chưa cung cấp lịch'}</p>
@@ -941,7 +1059,7 @@ export default function LandingPage() {
             <div className="text-center text-muted-foreground">Hiện chưa có đối tác nào được thêm.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-8xl mx-auto">
-              {partnersFromDB.map((partner, index) => (
+              {partnersFromDB.slice(0, 10).map((partner, index) => (
                 <motion.div
                   key={partner._id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -965,7 +1083,7 @@ export default function LandingPage() {
                         }}
                       />
                     </div>
-                    <p className="text-[15px] font-semibold text-primary mb-2">{partner.name}</p>
+                    <p className="text-[15px] font-semibold text-foreground mb-2">{partner.name}</p>
                     <p className="text-sm text-muted-foreground mb-2">{partner.category}</p>
                     {partner.website && (
                       <a

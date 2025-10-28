@@ -56,7 +56,7 @@ export function Sidebar({ className }: SidebarProps) {
         { path: '/appointments', icon: Calendar, label: t('appointments') },
         { path: '/donations', icon: Gift, label: t('donations') },
         { path: '/assistance', icon: HandHeart, label: t('assistance') },
-        { path: '/partners', icon: Building2, label: 'Quản lý đối tác' }, // Added partner management
+        { path: '/partners', icon: Building2, label: 'Quản lý đối tác' },
         { path: '/testimonials', icon: Heart, label: 'Quản lý đánh giá' },
         { path: '/analytics', icon: BarChart3, label: 'Thống kê' },
       ],
@@ -64,7 +64,7 @@ export function Sidebar({ className }: SidebarProps) {
         { path: '/patients', icon: Heart, label: t('patients') },
         { path: '/donations', icon: Gift, label: t('donations') },
         { path: '/assistance', icon: HandHeart, label: t('assistance') },
-        { path: '/partners', icon: Building2, label: 'Quản lý đối tác' }, // Added partner management
+        { path: '/partners', icon: Building2, label: 'Quản lý đối tác' }, 
       ],
     };
 
@@ -72,7 +72,7 @@ export function Sidebar({ className }: SidebarProps) {
   };
 
   const navigationItems = getNavigationItems();
-
+  
   const isActive = (path: string) => {
     if (path === '/dashboard') {
       return location.pathname === '/dashboard' || location.pathname === '/';

@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/select';
 import { usersAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 interface User {
   id: string;
@@ -349,6 +351,8 @@ export default function UsersPage() {
           ))}
         </div>
       )}
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

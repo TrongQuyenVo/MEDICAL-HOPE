@@ -9,6 +9,8 @@ import { Camera, User, Upload, X } from "lucide-react";
 import { usersAPI } from "@/lib/api";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
+import ScrollToTop from "@/components/layout/ScrollToTop";
+import ChatBubble from "./ChatbotPage";
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuthStore();
@@ -112,9 +114,7 @@ export default function ProfilePage() {
           occupation: formData.profile?.occupation || '',
         }));
 
-        res = await usersAPI.updateProfile(fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        res = await usersAPI.updateProfile(fd);
         setUploading(false);
       } else {
         // bình thường gửi json
@@ -391,6 +391,8 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

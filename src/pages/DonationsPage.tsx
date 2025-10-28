@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Gift } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/authStore';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 export default function DonationsPage() {
   const { user } = useAuthStore();
@@ -93,6 +95,8 @@ export default function DonationsPage() {
           </div>
         </CardContent>
       </Card>
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import ChatBubble from './ChatbotPage';
+import ScrollToTop from '@/components/layout/ScrollToTop';
 
 export default function AnalyticsPage() {
   const { t } = useTranslation();
@@ -303,6 +305,8 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+      <ChatBubble />
+      <ScrollToTop />
     </motion.div>
   );
 }

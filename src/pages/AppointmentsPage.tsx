@@ -34,14 +34,14 @@ export default function AppointmentsPage() {
       setAppointments(appointmentsData);
       setPagination(response.data.pagination || { total: 0, pages: 1, page: 1, limit: 10 });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể tải danh sách lịch hẹn');
-      setError(error.response?.data?.message || 'Không thể tải danh sách lịch hẹn');
+      const errorMessage = error.response?.data?.message || 'Không thể tải danh sách lịch hẹn';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔄 Gọi khi vào trang hoặc thay đổi pagination
   useEffect(() => {
     fetchAppointments();
   }, [pagination.page, pagination.limit]);
@@ -49,6 +49,10 @@ export default function AppointmentsPage() {
   const handleConfirmAppointment = async (appointmentId) => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Không tìm thấy token xác thực');
+      }
+
       await axios.patch(
         `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
         { status: 'confirmed' },
@@ -61,17 +65,22 @@ export default function AppointmentsPage() {
       );
       toast.success('Đã xác nhận lịch hẹn');
     } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Không thể xác nhận lịch hẹn';
       console.error('Lỗi xác nhận lịch hẹn:', error);
-      toast.error(error.response?.data?.message || 'Không thể xác nhận lịch hẹn');
+      toast.error(errorMessage);
     }
   };
 
   const handleRejectAppointment = async (appointmentId) => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Không tìm thấy token xác thực');
+      }
+
       await axios.patch(
         `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
-        { status: 'cancelled' },  // Sửa từ 'confirmed' thành 'cancelled'
+        { status: 'cancelled' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setAppointments((prev) =>
@@ -81,14 +90,19 @@ export default function AppointmentsPage() {
       );
       toast.success('Đã từ chối lịch hẹn');
     } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Không thể từ chối lịch hẹn';
       console.error('Lỗi từ chối lịch hẹn:', error);
-      toast.error(error.response?.data?.message || 'Không thể từ chối lịch hẹn');
+      toast.error(errorMessage);
     }
   };
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Không tìm thấy token xác thực');
+      }
+
       await axios.patch(
         `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
         { status: 'cancelled' },
@@ -101,8 +115,9 @@ export default function AppointmentsPage() {
       );
       toast.success('Bạn đã hủy lịch hẹn thành công');
     } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Không thể hủy lịch hẹn';
       console.error('Lỗi khi hủy lịch hẹn:', error);
-      toast.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
+      toast.error(errorMessage);
     }
   };
 
@@ -130,6 +145,11 @@ export default function AppointmentsPage() {
       default:
         return 'Quản lý tất cả các cuộc hẹn khám bệnh';
     }
+  };
+
+  // Kiểm tra lịch hẹn đã quá thời gian
+  const isAppointmentExpired = (scheduledTime) => {
+    return new Date(scheduledTime) < new Date();
   };
 
   if (!user) return null;
@@ -233,69 +253,74 @@ export default function AppointmentsPage() {
                       {appointment.status === 'cancelled' && 'Đã hủy'}
                     </Badge>
 
-                    {/* Nút cho bác sĩ: Xác nhận và Từ chối nếu status là 'scheduled' */}
-                    {user.role === 'doctor' && appointment.status === 'scheduled' && (
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleConfirmAppointment(appointment._id)}
-                          className="text-green-600 border-green-600 hover:bg-green-50"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Xác nhận
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRejectAppointment(appointment._id)}
-                          className="text-red-600 border-red-600 hover:bg-red-50"
-                        >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Từ chối
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Nút cho bệnh nhân: Hủy nếu status là 'scheduled' (chưa confirmed) */}
-                    {user.role === 'patient' && appointment.status === 'scheduled' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleCancelAppointment(appointment._id)}
-                        className="text-red-600 border-red-600 hover:bg-red-50"
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Hủy lịch
-                      </Button>
-                    )}
-
-                    {/* Nút cho admin: Có thể xác nhận, từ chối, hủy bất kỳ lúc nào (tùy chỉnh theo nhu cầu) */}
-                    {(user.role === 'admin' || user.role === 'charity_admin') && (
-                      <div className="flex space-x-2">
-                        {appointment.status !== 'confirmed' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleConfirmAppointment(appointment._id)}
-                            className="text-green-600 border-green-600 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Xác nhận
-                          </Button>
+                    {/* Không hiển thị nút cho lịch hẹn đã quá thời gian */}
+                    {!isAppointmentExpired(appointment.scheduledTime) && (
+                      <>
+                        {/* Nút cho bác sĩ: Xác nhận và Từ chối nếu status là 'scheduled' */}
+                        {user.role === 'doctor' && appointment.status === 'scheduled' && (
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleConfirmAppointment(appointment._id)}
+                              className="text-green-600 border-green-600 hover:bg-green-50"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Xác nhận
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRejectAppointment(appointment._id)}
+                              className="text-red-600 border-red-600 hover:bg-red-50"
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Từ chối
+                            </Button>
+                          </div>
                         )}
-                        {appointment.status !== 'cancelled' && (
+
+                        {/* Nút cho bệnh nhân: Hủy nếu status là 'scheduled' */}
+                        {user.role === 'patient' && appointment.status === 'scheduled' && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleRejectAppointment(appointment._id)}
+                            onClick={() => handleCancelAppointment(appointment._id)}
                             className="text-red-600 border-red-600 hover:bg-red-50"
                           >
                             <XCircle className="h-4 w-4 mr-1" />
-                            Hủy/Từ chối
+                            Hủy lịch
                           </Button>
                         )}
-                      </div>
+
+                        {/* Nút cho admin: Có thể xác nhận, từ chối, hủy bất kỳ lúc nào (tùy chỉnh theo nhu cầu) */}
+                        {(user.role === 'admin' || user.role === 'charity_admin') && (
+                          <div className="flex space-x-2">
+                            {appointment.status !== 'confirmed' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleConfirmAppointment(appointment._id)}
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Xác nhận
+                              </Button>
+                            )}
+                            {appointment.status !== 'cancelled' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRejectAppointment(appointment._id)}
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Hủy/Từ chối
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

@@ -9,6 +9,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { assistanceAPI } from '@/lib/api';
 import AssistanceRequestForm from '@/components/form/AssistanceRequestForm';
 import toast from 'react-hot-toast';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 interface AssistanceRequest {
   _id: string;
@@ -339,6 +341,8 @@ export default function AssistancePage() {
       {user.role === 'patient' && (
         <AssistanceRequestForm open={showRequestForm} onOpenChange={setShowRequestForm} />
       )}
+      <ScrollToTop />
+      <ChatBubble />
     </motion.div>
   );
 }

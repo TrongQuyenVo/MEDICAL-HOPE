@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/NavHeader';
 import Footer from '@/components/layout/Footer';
 import ScrollToTop from '@/components/layout/ScrollToTop';
+import ChatBubble from './ChatbotPage';
 
 export default function ServicesPage() {
   const navigate = useNavigate();
@@ -108,6 +109,7 @@ export default function ServicesPage() {
       </div>
       <Footer />
       <ScrollToTop />
+      <ChatBubble />
     </div>
   );
 }

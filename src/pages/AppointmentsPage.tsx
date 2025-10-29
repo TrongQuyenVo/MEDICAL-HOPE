@@ -1,11 +1,10 @@
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Users, CheckCircle, XCircle, User } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import BookAppointmentForm from '@/components/form/BookAppointmentForm';
 import { appointmentsAPI } from '@/lib/api';
@@ -17,6 +16,9 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+
+  // Log để kiểm tra VITE_API_URL
+  console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
 
   const fetchAppointments = async () => {
     try {
@@ -48,16 +50,8 @@ export default function AppointmentsPage() {
 
   const handleConfirmAppointment = async (appointmentId) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Không tìm thấy token xác thực');
-      }
-
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
-        { status: 'confirmed' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      console.log('Confirming appointment ID:', appointmentId);
+      await appointmentsAPI.updateStatus(appointmentId, { status: 'confirmed' });
       setAppointments((prev) =>
         prev.map((apt) =>
           apt._id === appointmentId ? { ...apt, status: 'confirmed' } : apt
@@ -73,16 +67,8 @@ export default function AppointmentsPage() {
 
   const handleRejectAppointment = async (appointmentId) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Không tìm thấy token xác thực');
-      }
-
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
-        { status: 'cancelled' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      console.log('Rejecting appointment ID:', appointmentId);
+      await appointmentsAPI.updateStatus(appointmentId, { status: 'cancelled' });
       setAppointments((prev) =>
         prev.map((apt) =>
           apt._id === appointmentId ? { ...apt, status: 'cancelled' } : apt
@@ -98,16 +84,8 @@ export default function AppointmentsPage() {
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Không tìm thấy token xác thực');
-      }
-
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`,
-        { status: 'cancelled' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      console.log('Cancelling appointment ID:', appointmentId);
+      await appointmentsAPI.updateStatus(appointmentId, { status: 'cancelled' });
       setAppointments((prev) =>
         prev.map((apt) =>
           apt._id === appointmentId ? { ...apt, status: 'cancelled' } : apt
@@ -189,8 +167,7 @@ export default function AppointmentsPage() {
 
       <Card className="healthcare-card">
         <CardHeader>
-          <CardTitle>Danh sách lịch hẹn</CardTitle>
-          <CardDescription>Tất cả các cuộc hẹn của bạn</CardDescription>
+          <CardTitle>Tất cả các cuộc hẹn</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -293,10 +270,10 @@ export default function AppointmentsPage() {
                           </Button>
                         )}
 
-                        {/* Nút cho admin: Có thể xác nhận, từ chối, hủy bất kỳ lúc nào (tùy chỉnh theo nhu cầu) */}
+                        {/* Nút cho admin: Chỉ hiển thị nút phù hợp với trạng thái */}
                         {(user.role === 'admin' || user.role === 'charity_admin') && (
                           <div className="flex space-x-2">
-                            {appointment.status !== 'confirmed' && (
+                            {appointment.status !== 'confirmed' && appointment.status !== 'cancelled' && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -307,7 +284,7 @@ export default function AppointmentsPage() {
                                 Xác nhận
                               </Button>
                             )}
-                            {appointment.status !== 'cancelled' && (
+                            {appointment.status !== 'cancelled' && appointment.status !== 'confirmed' && (
                               <Button
                                 size="sm"
                                 variant="outline"

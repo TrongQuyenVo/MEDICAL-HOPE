@@ -22,7 +22,7 @@ import ChatBubble from './ChatbotPage';
 import { useState, useEffect } from 'react';
 import DonationForm from '@/components/form/DonationForm';
 import TestimonialForm from '@/components/form/TestimonialForm';
-import { partnersAPI, testimonialsAPI } from '@/lib/api';
+import { partnersAPI, testimonialsAPI, assistanceAPI } from '@/lib/api'; // Thêm assistanceAPI
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import toast from 'react-hot-toast';
 import { HeartAnimation } from '@/components/layout/HeartAnimation';
@@ -56,6 +56,27 @@ interface Testimonial {
   likes?: number;
 }
 
+interface AssistanceRequest {
+  _id: string;
+  patientId: {
+    userId: {
+      fullName: string;
+      phone: string;
+      profile: {
+        dateOfBirth: string;
+        address: string;
+      };
+    };
+  };
+  title: string;
+  description: string;
+  medicalCondition: string;
+  requestedAmount: number;
+  raisedAmount: number;
+  urgency: string;
+  status: string;
+}
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [openForm, setOpenForm] = useState(false);
@@ -79,7 +100,10 @@ export default function LandingPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedTestimonials, setLikedTestimonials] = useState<string[]>([]);
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null);
-
+  // Thêm state cho assistance requests
+  const [assistanceRequests, setAssistanceRequests] = useState<AssistanceRequest[]>([]);
+  const [assistanceLoading, setAssistanceLoading] = useState(true);
+  const [assistanceError, setAssistanceError] = useState<string | null>(null);
 
   // Lấy danh sách đánh giá từ API
   const fetchTestimonials = async () => {
@@ -95,9 +119,30 @@ export default function LandingPage() {
     }
   };
 
+  // Lấy danh sách yêu cầu hỗ trợ từ API
+  const fetchAssistanceRequests = async () => {
+    try {
+      setAssistanceLoading(true);
+      setAssistanceError(null);
+      // Remove limit parameter to get all records
+      const response = await assistanceAPI.getPublic();
+
+      if (response.data && Array.isArray(response.data.data)) {
+        setAssistanceRequests(response.data.data);
+      } else {
+        setAssistanceRequests([]);
+      }
+
+      setAssistanceLoading(false);
+    } catch (err: any) {
+      setAssistanceError(err?.response?.data?.message || 'Lỗi khi tải danh sách yêu cầu hỗ trợ');
+      setAssistanceLoading(false);
+      setAssistanceRequests([]);
+    }
+  };
+
   // Gửi đánh giá mới qua API
   const handleTestimonialFormSubmit = async () => {
-    // Kiểm tra form
     if (
       !testimonialFormData.name ||
       !testimonialFormData.age ||
@@ -112,11 +157,9 @@ export default function LandingPage() {
     try {
       await testimonialsAPI.create(testimonialFormData);
       toast.success('Gửi đánh giá thành công!');
-      // Reset form và đóng dialog
       setTestimonialFormData({ name: '', age: '', location: '', treatment: '', content: '' });
       setTestimonialError(null);
       setOpenTestimonialForm(false);
-      // Tải lại danh sách đánh giá
       fetchTestimonials();
     } catch (err: any) {
       setTestimonialError(err?.response?.data?.message || 'Lỗi khi gửi đánh giá');
@@ -128,7 +171,6 @@ export default function LandingPage() {
     setTestimonialError(null);
   };
 
-  // Reset form
   const handleTestimonialFormReset = () => {
     setTestimonialFormData({ name: '', age: '', location: '', treatment: '', content: '' });
     setTestimonialError(null);
@@ -141,7 +183,6 @@ export default function LandingPage() {
     setLikedTestimonials(liked);
   }, []);
 
-  // 🔢 Hàm định dạng số like (ví dụ: 999 -> 999, 1200 -> 1.2k, 15000 -> 15k)
   const formatLikeCount = (num?: number) => {
     if (!num) return 0;
     if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -149,7 +190,11 @@ export default function LandingPage() {
     return num;
   };
 
-  // Lấy dữ liệu đối tác từ database
+  // Format số tiền sang VNĐ
+  const formatVND = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
+
   useEffect(() => {
     const fetchPartners = async () => {
       try {
@@ -163,21 +208,18 @@ export default function LandingPage() {
           logo: p.logo ? `${API_SERVER}${p.logo}` : undefined,
         });
 
-        // Bus
         setBusPartners(
           partners
             .filter((p) => p.type === 'transportation' && p.isActive)
             .map(normalizeLogo)
         );
 
-        // Food
         setFoodDistributionPoints(
           partners
             .filter((p) => p.type === 'food_distribution' && p.isActive)
             .map(normalizeLogo)
         );
 
-        // Partners (bệnh viện, tổ chức, quỹ...)
         setPartnersFromDB(
           partners
             .filter((p) => (p.type === 'hospital' || p.type === 'charity' || p.type === 'international_organization' || p.type === 'association') && p.isActive)
@@ -193,10 +235,10 @@ export default function LandingPage() {
 
     fetchPartners();
     fetchTestimonials();
+    fetchAssistanceRequests(); // Gọi API để lấy yêu cầu hỗ trợ
   }, []);
 
   const handleLike = async (id: string) => {
-    // Nếu đã like thì không cho nhấn nữa
     if (localStorage.getItem(`liked_${id}`)) return;
 
     try {
@@ -206,13 +248,8 @@ export default function LandingPage() {
       );
 
       if (res.ok) {
-        // ✅ Lưu vào localStorage
         localStorage.setItem(`liked_${id}`, "true");
-
-        // ✅ Cập nhật giao diện ngay
         setLikedTestimonials((prev) => [...prev, id]);
-
-        // ✅ Cập nhật số lượng tim trên client (không cần reload toàn bộ)
         setTestimonials((prev) =>
           prev.map((t) =>
             t._id === id ? { ...t, likes: (t.likes || 0) + 1 } : t
@@ -224,6 +261,18 @@ export default function LandingPage() {
     }
   };
 
+  const calculateAge = (dateOfBirth: string) => {
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age;
+  };
 
   const volunteerEvents = [
     {
@@ -315,36 +364,6 @@ export default function LandingPage() {
       title: 'Khám & Điều trị',
       description: 'Thực hiện khám chữa bệnh miễn phí với sự tận tâm và chuyên nghiệp',
       icon: Heart
-    }
-  ];
-
-  const supportRequests = [
-    {
-      name: 'Nguyễn Văn Hùng',
-      age: '45 tuổi',
-      location: 'Hà Tĩnh',
-      need: 'Phẫu thuật tim mạch',
-      amount: '50,000,000 VNĐ',
-      description: 'Anh Hùng cần hỗ trợ chi phí phẫu thuật tim để tiếp tục làm việc nuôi gia đình.',
-      progress: 60
-    },
-    {
-      name: 'Trần Thị Lan',
-      age: '62 tuổi',
-      location: 'Đà Nẵng',
-      need: 'Điều trị ung thư',
-      amount: '80,000,000 VNĐ',
-      description: 'Bà Lan cần hỗ trợ chi phí hóa trị liệu để chiến đấu với bệnh ung thư giai đoạn sớm.',
-      progress: 25
-    },
-    {
-      name: 'Lê Minh Tuấn',
-      age: '8 tuổi',
-      location: 'Cần Thơ',
-      need: 'Phẫu thuật chỉnh hình',
-      amount: '30,000,000 VNĐ',
-      description: 'Bé Tuấn cần phẫu thuật để khắc phục dị tật chân, giúp em có thể đi lại bình thường.',
-      progress: 80
     }
   ];
 
@@ -612,7 +631,6 @@ export default function LandingPage() {
       {/* Testimonials Section */}
       <section className="py-20 bg-background relative">
         <div className="container mx-auto px-4">
-          {/* Thêm HeartAnimation vào đây */}
           <HeartAnimation />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -632,7 +650,6 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Phần còn lại của section giữ nguyên */}
           {testimonialLoading ? (
             <div className="text-center text-muted-foreground">Đang tải đánh giá...</div>
           ) : testimonialError ? (
@@ -642,7 +659,6 @@ export default function LandingPage() {
           ) : (
             <div className="max-w-7xl mx-auto px-2">
               <div className="relative max-w-6xl mx-auto">
-                {/* Nút mũi tên trái */}
                 {currentIndex > 0 && (
                   <button
                     onClick={() => setCurrentIndex((prev) => Math.max(prev - 3, 0))}
@@ -652,7 +668,6 @@ export default function LandingPage() {
                   </button>
                 )}
 
-                {/* Danh sách hiển thị */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {testimonials
                     .filter((t) => t.visible !== false)
@@ -712,8 +727,6 @@ export default function LandingPage() {
                       </motion.div>
                     ))}
                 </div>
-
-                {/* Nút mũi tên phải */}
                 {currentIndex + 3 < testimonials.length && (
                   <button
                     onClick={() =>
@@ -746,7 +759,6 @@ export default function LandingPage() {
             </Button>
           </motion.div>
 
-          {/* Dialog cho form đánh giá */}
           <Dialog open={openTestimonialForm} onOpenChange={setOpenTestimonialForm}>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
@@ -765,7 +777,6 @@ export default function LandingPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Dialog cho chi tiết đánh giá */}
           <Dialog
             open={!!selectedTestimonial}
             onOpenChange={() => setSelectedTestimonial(null)}
@@ -782,8 +793,6 @@ export default function LandingPage() {
 
               <div className="mt-4 space-y-2">
                 <p className="text-muted-foreground">{selectedTestimonial?.content}</p>
-
-                {/* Hiển thị số like */}
                 <div className="flex items-center gap-1 text-red-500 font-medium mt-2">
                   <Heart className="h-5 w-5 fill-red-500" />
                   <span>{formatLikeCount(selectedTestimonial?.likes)}</span>
@@ -814,49 +823,67 @@ export default function LandingPage() {
               Cùng chung tay giúp đỡ những bệnh nhân cần hỗ trợ tài chính để vượt qua khó khăn và tiếp tục điều trị.
             </p>
           </motion.div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {supportRequests.map((request, index) => (
-              <motion.div
-                key={request.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="healthcare-card h-full">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-lg">{request.name}, {request.age}</h3>
-                      <Badge variant="secondary">{request.location}</Badge>
-                    </div>
-                    <p className="text-sm text-primary font-semibold mb-2">{request.need}</p>
-                    <p className="text-sm text-muted-foreground mb-4">{request.description}</p>
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>Số tiền cần hỗ trợ:</span>
-                        <span className="font-semibold">{request.amount}</span>
+          {assistanceLoading ? (
+            <div className="text-center text-muted-foreground">Đang tải yêu cầu hỗ trợ...</div>
+          ) : assistanceError ? (
+            <div className="text-center text-red-500">{assistanceError}</div>
+          ) : assistanceRequests.length === 0 ? (
+            <div className="text-center text-muted-foreground">Hiện chưa có yêu cầu hỗ trợ nào.</div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {assistanceRequests.map((request, index) => (
+                <motion.div
+                  key={request._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card className="healthcare-card h-full">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-bold text-lg">{request.patientId.userId.fullName}</h3>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Tuổi: {calculateAge(request.patientId.userId.profile.dateOfBirth)}</p>
+                            <p>Địa chỉ: {request.patientId.userId.profile.address}</p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">
+                          {request.urgency === 'critical' ? 'Khẩn cấp' :
+                            request.urgency === 'high' ? 'Cao' :
+                              request.urgency === 'medium' ? 'Trung bình' : 'Thấp'}
+                        </Badge>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className="bg-primary h-2.5 rounded-full"
-                          style={{ width: `${request.progress}%` }}
-                        ></div>
+                      <p className="text-sm text-primary font-semibold mb-2">{request.medicalCondition}</p>
+                      <p className="text-sm text-muted-foreground mb-4">{request.description}</p>
+                      <div className="mb-4">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Số tiền cần hỗ trợ:</span>
+                          <span className="font-semibold">{formatVND(request.requestedAmount)}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="bg-primary h-2.5 rounded-full"
+                            style={{ width: `${(request.raisedAmount / request.requestedAmount) * 100}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Đã quyên góp được: {((request.raisedAmount / request.requestedAmount) * 100).toFixed(0)}%
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Đã quyên góp được: {request.progress}%
-                      </p>
-                    </div>
-                    <Button
-                      className="bg-red-500 text-white hover:bg-red-600 w-full"
-                      onClick={() => setOpenForm(true)}
-                    >
-                      Ủng hộ ngay
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                      <Button
+                        className="bg-red-500 text-white hover:bg-red-600 w-full"
+                        onClick={() => setOpenForm(true)}
+                      >
+                        Ủng hộ ngay
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

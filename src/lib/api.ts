@@ -74,12 +74,12 @@ export const authAPI = {
 export const usersAPI = {
   getAllUsers: (params?: any) => api.get('/users', { params }),
   updateProfile: (data: any) => api.put('/users/profile', data),
-  
   changePassword: (data: any) => api.put('/users/change-password', data),
   suspendUser: (id: string) => api.patch(`/users/${id}/suspend`),
   activateUser: (id: string) => api.patch(`/users/${id}/activate`),
   deleteUser: (id: string) => api.delete(`/users/${id}`),
-}
+};
+
 // ==========================
 // 🩺 DOCTORS API
 // ==========================
@@ -89,7 +89,7 @@ export const doctorsAPI = {
   updateProfile: (data: any) => api.put('/doctors/profile', data),
   updateAvailability: (data: any) => api.put('/doctors/availability', data),
   getAvailability: (id: string, date?: string) =>
-  api.get(`/doctors/${id}/availability`, { params: date ? { date } : {} }),
+    api.get(`/doctors/${id}/availability`, { params: date ? { date } : {} }),
 };
 
 // ==========================
@@ -124,10 +124,12 @@ export const donationsAPI = {
 // 🤝 ASSISTANCE API
 // ==========================
 export const assistanceAPI = {
-  create: (data: FormData) => api.post('/assistance', data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
-  getAll: (params?: any) => api.get('/assistance', { params }),
+  create: (data: FormData) =>
+    api.post('/assistance', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  getAll: (params?: any) => api.get('/assistance', { params }), // Dành cho người dùng đã đăng nhập
+  getPublic: () => api.get('/assistance/public'), // Dành cho landing page
   updateStatus: (id: string, data: any) => api.patch(`/assistance/${id}/status`, data),
 };
 
@@ -163,12 +165,14 @@ export const chatbotAPI = {
 // ==========================
 export const campaignsAPI = {
   getAll: () => api.get('/campaigns'),
-  create: (data: FormData) => api.post('/campaigns', data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
-  update: (id: string, data: FormData) => api.put(`/campaigns/${id}`, data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
+  create: (data: FormData) =>
+    api.post('/campaigns', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  update: (id: string, data: FormData) =>
+    api.put(`/campaigns/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   approve: (id: string) => api.patch(`/campaigns/${id}/approve`),
   delete: (id: string) => api.delete(`/campaigns/${id}`),
 };

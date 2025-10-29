@@ -31,7 +31,7 @@ const schema = yup.object({
   doctorId: yup.string().required("Vui lòng chọn bác sĩ"),
   slotId: yup.string().required("Vui lòng chọn khung giờ rảnh"),
   appointmentType: yup.string().required("Vui lòng chọn loại lịch hẹn"),
-  patientNotes: yup.string(),
+  patientNotes: yup.string().optional(),
 });
 
 export default function BookAppointmentForm({ open, onOpenChange, doctor, onSuccess }) {
@@ -53,14 +53,14 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      doctorId: doctor?.id || "",
+      doctorId: doctor?._id || "",
       appointmentType: "consultation",
     },
   });
 
   const selectedDoctorId = watch("doctorId");
 
-  //Load danh sách bác sĩ
+  // Load danh sách bác sĩ
   useEffect(() => {
     const fetchDoctors = async () => {
       if (doctor) return;
@@ -78,6 +78,7 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
         setDoctors(doctorsData);
         if (doctorsData.length === 0) toast("Không có bác sĩ khả dụng.");
       } catch (err) {
+        console.error("Lỗi tải danh sách bác sĩ:", err);
         toast.error("Lỗi khi tải danh sách bác sĩ.");
       } finally {
         setIsLoadingDoctors(false);
@@ -86,7 +87,7 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
     fetchDoctors();
   }, [isAuthenticated, token, doctor]);
 
-  //Khi chọn bác sĩ → tự load lịch rảnh
+  // Khi chọn bác sĩ → tự load lịch rảnh
   useEffect(() => {
     if (!selectedDoctorId) return;
     const fetchSlots = async () => {
@@ -95,6 +96,7 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
         const response = await doctorsAPI.getAvailability(selectedDoctorId);
         setAvailableSlots(response.data.availableSlots || []);
       } catch (error) {
+        console.error("Lỗi tải khung giờ rảnh:", error);
         toast.error("Lỗi khi tải khung giờ rảnh.");
       } finally {
         setIsLoadingSlots(false);
@@ -103,7 +105,7 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
     fetchSlots();
   }, [selectedDoctorId]);
 
-  // 🔹 Đặt lịch
+  // Đặt lịch
   const onSubmit = async (data) => {
     if (!isAuthenticated || !token) {
       toast.error("Vui lòng đăng nhập để tiếp tục.");
@@ -121,18 +123,18 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
 
     const [year, month, day, slotTime] = data.slotId.split("-");
     const slotDate = `${year}-${month}-${day}`;
-    const scheduledTime = new Date(`${slotDate}T${slotTime}:00`);
 
     setIsSubmitting(true);
     try {
-      await appointmentsAPI.create({
+      const requestData = {
         doctorId: data.doctorId,
         date: slotDate,
         time: slotTime,
-        scheduledTime,
         appointmentType: data.appointmentType,
-        patientNotes: data.patientNotes,
-      });
+        patientNotes: data.patientNotes || "",
+      };
+      console.log("📤 Sending appointment request:", requestData);
+      await appointmentsAPI.create(requestData);
       toast.success("Đặt lịch hẹn thành công!");
       reset();
       onOpenChange(false);
@@ -140,21 +142,11 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
     } catch (err) {
       console.error("❌ Error when creating appointment:", err);
       console.error("🧩 Response data:", err.response?.data);
-      console.error("📦 Request data:", {
-        doctorId: data.doctorId,
-        date: slotDate,
-        time: slotTime,
-        scheduledTime,
-        appointmentType: data.appointmentType,
-        patientNotes: data.patientNotes,
-      });
-
       toast.error(err.response?.data?.message || "Có lỗi xảy ra khi đặt lịch.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -211,7 +203,6 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
           {/* Khung giờ rảnh */}
           <div className="space-y-3">
             <Label>Chọn khung giờ rảnh *</Label>
-
             {isLoadingSlots ? (
               <p className="text-sm text-muted-foreground">
                 Đang tải khung giờ rảnh...
@@ -237,7 +228,6 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
                     <Calendar className="h-4 w-4 text-primary" />
                     <span className="font-semibold">{date}</span>
                   </div>
-
                   <div className="flex flex-wrap gap-2">
                     {slots.flatMap((slot: any) =>
                       slot.times.map((time: string, idx: number) => (
@@ -259,7 +249,6 @@ export default function BookAppointmentForm({ open, onOpenChange, doctor, onSucc
                 </div>
               ))
             )}
-
             {errors.slotId && (
               <p className="text-sm text-destructive">
                 {errors.slotId.message}

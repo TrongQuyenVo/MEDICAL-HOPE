@@ -133,6 +133,15 @@ export const assistanceAPI = {
   updateStatus: (id: string, data: any) => api.patch(`/assistance/${id}/status`, data),
 };
 
+// analytics API
+export const analyticsAPI = {
+  getDashboard: () => api.get('/analytics/admin-dashboard'),
+  getCharityDashboard: () => api.get('/analytics/charity-dashboard'),
+};
+// api/index.js
+export const adminAPI = {
+  getDashboard: () => api.get('/admin/dashboard'),
+};
 // ==========================
 // 🏥 CHARITY API
 // ==========================
@@ -158,23 +167,6 @@ export const chatbotAPI = {
   sendMessage: (data: { message: string; sessionId: string }) =>
     api.post('/chatbot/chat', data),
   getHistory: (sessionId: string) => api.get(`/chatbot/history/${sessionId}`),
-};
-
-// ==========================
-// 🎗️ CAMPAIGNS API
-// ==========================
-export const campaignsAPI = {
-  getAll: () => api.get('/campaigns'),
-  create: (data: FormData) =>
-    api.post('/campaigns', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  update: (id: string, data: FormData) =>
-    api.put(`/campaigns/${id}`, data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  approve: (id: string) => api.patch(`/campaigns/${id}/approve`),
-  delete: (id: string) => api.delete(`/campaigns/${id}`),
 };
 
 // ==========================

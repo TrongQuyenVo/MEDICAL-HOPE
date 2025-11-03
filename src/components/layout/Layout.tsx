@@ -4,12 +4,11 @@ import { Sidebar } from './Sidebar';
 import { useAuthStore } from '@/stores/authStore';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 import ChatBubble from '@/pages/ChatbotPage';
+import ScrollToTop from './ScrollToTop';
 
 function LayoutContent() {
   const { isCollapsed } = useSidebar();
-  const { user } = useAuthStore(); // ✅ Lấy thông tin user từ store
-
-  // Chỉ cho phép hiển thị bong bóng với 3 vai trò cụ thể
+  const { user } = useAuthStore();
   const allowedRoles = ['patient', 'doctor', 'charity_admin'];
 
   return (
@@ -37,9 +36,12 @@ function LayoutContent() {
           <Outlet />
         </main>
 
-        {/* ✅ Chỉ hiển thị ChatBubble nếu role nằm trong allowedRoles */}
+        {/* ChatBubble */}
         {allowedRoles.includes(user?.role) && <ChatBubble />}
       </div>
+
+      {/* NÚT SCROLL TO TOP – HIỆN TRONG LAYOUT ĐÃ ĐĂNG NHẬP */}
+      <ScrollToTop />
     </div>
   );
 }
@@ -47,10 +49,18 @@ function LayoutContent() {
 export function Layout() {
   const { isAuthenticated } = useAuthStore();
 
+  // Nếu CHƯA đăng nhập → vẫn hiển thị nút ScrollToTop
   if (!isAuthenticated) {
-    return <Outlet />;
+    return (
+      <div className="min-h-screen bg-background">
+        <Outlet />
+        {/* NÚT SCROLL TO TOP – HIỆN TRONG TRANG CÔNG KHAI */}
+        <ScrollToTop />
+      </div>
+    );
   }
 
+  // Nếu ĐÃ đăng nhập → dùng Layout đầy đủ
   return (
     <SidebarProvider>
       <LayoutContent />

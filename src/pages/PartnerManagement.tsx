@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Building2, Plus, Edit, Trash2, ExternalLink,
-  Phone, MapPin, Clock, Users, Image as ImageIcon, Globe, Bus, Mail
+  Phone, MapPin, Clock, Users, Image as ImageIcon, Globe, Bus, Mail,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -32,15 +33,28 @@ interface Partner {
     organizer?: string;
     departure?: string;
     destination?: string;
-    email?: string; // Thêm email
-    activities?: string[]; // Thêm activities
+    email?: string;
+    activities?: string[];
   };
   isActive: boolean;
+}
+
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export function PartnerManagement() {
   const { user } = useAuthStore();
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [formData, setFormData] = useState({
@@ -71,15 +85,29 @@ export function PartnerManagement() {
   // Fetch partners
   useEffect(() => {
     fetchPartners();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   const fetchPartners = async () => {
     try {
       setLoading(true);
-      const response = await partnersAPI.getAll();
-      setPartners(response.data || []);
+      const response = await partnersAPI.getAll({
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+
+      const partnerList = Array.isArray(response?.data?.data) ? response.data.data : [];
+      setPartners(partnerList);
+
+      setPagination({
+        total: response.data?.pagination?.total || 0,
+        page: response.data?.pagination?.page || 1,
+        limit: response.data?.pagination?.limit || 10,
+        totalPages: response.data?.pagination?.totalPages || 1,
+      });
     } catch (err: any) {
+      console.error('Lỗi tải đối tác:', err);
       setError(err.response?.data?.message || 'Không thể tải danh sách đối tác');
+      setPartners([]);
     } finally {
       setLoading(false);
     }
@@ -119,10 +147,11 @@ export function PartnerManagement() {
       } else {
         const res = await partnersAPI.create(data);
         updatedPartner = res.data.partner;
-        setPartners([...partners, updatedPartner]);
+        setPartners([updatedPartner, ...partners]);
       }
 
       closeForm();
+      fetchPartners(); // Tải lại danh sách
     } catch (err: any) {
       setError(err.response?.data?.message || 'Lưu đối tác thất bại');
     } finally {
@@ -160,6 +189,7 @@ export function PartnerManagement() {
     try {
       await partnersAPI.delete(id);
       setPartners(partners.filter(p => p._id !== id));
+      fetchPartners(); // Cập nhật phân trang
     } catch (err: any) {
       setError(err.response?.data?.message || 'Xóa thất bại');
     }
@@ -195,13 +225,16 @@ export function PartnerManagement() {
     setError(null);
   };
 
-  // Xử lý danh sách activities
   const handleActivitiesChange = (value: string) => {
     const activities = value.split(',').map(item => item.trim()).filter(item => item);
     setFormData({
       ...formData,
       details: { ...formData.details, activities }
     });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
   };
 
   // Kiểm tra quyền
@@ -437,7 +470,7 @@ export function PartnerManagement() {
               </div>
             )}
 
-            {/* Conditional Fields - Hospital, Charity, International Organization, Association */}
+            {/* Conditional Fields - Hospital, Charity, etc. */}
             {['hospital', 'charity', 'international_organization', 'association'].includes(formData.type) && (
               <div className="space-y-4 border-t pt-4">
                 <h4 className="font-medium text-primary flex items-center gap-2">
@@ -507,174 +540,195 @@ export function PartnerManagement() {
         ) : partners.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">Chưa có đối tác nào. Hãy thêm mới!</div>
         ) : (
-          <div className="bg-card rounded-xl shadow-sm border overflow-hidden">
-            {loading && partners.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">Đang tải dữ liệu...</div>
-            ) : partners.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">Chưa có đối tác nào. Hãy thêm mới!</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full table-auto">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Logo</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Tên</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Loại</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Thông tin</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Trạng thái</th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {partners.map((partner) => {
-                      const logoUrl = partner.logo
-                        ? (partner.logo.startsWith('http') ? partner.logo : `${API_SERVER}${partner.logo}`)
-                        : null;
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Logo</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Tên</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Loại</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Thông tin</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Trạng thái</th>
+                    <th className="px-6 py-4 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {partners.map((partner) => {
+                    const logoUrl = partner.logo
+                      ? (partner.logo.startsWith('http') ? partner.logo : `${API_SERVER}${partner.logo}`)
+                      : null;
 
-                      return (
-                        <tr key={partner._id} className="hover:bg-muted/50 transition-colors">
-                          <td className="px-6 py-4 w-[50px]">
-                            {logoUrl ? (
-                              <img
-                                src={logoUrl}
-                                alt={partner.name}
-                                className="h-10 w-10 rounded-full object-contain bg-white p-1 shadow-sm"
-                                onError={(e) => {
-                                  e.currentTarget.src = '/default-logo.png';
-                                }}
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-gray-200 border-2 border-dashed flex items-center justify-center">
-                                <ImageIcon className="h-5 w-5 text-gray-400" />
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-1 py-4 font-medium w-[100px]">{partner.name}</td>
-                          <td className="px-3 py-4 w-[80px]">
-                            <Badge variant="secondary">
-                              {partner.type === 'hospital' && 'Bệnh viện'}
-                              {partner.type === 'charity' && 'Từ thiện'}
-                              {partner.type === 'international_organization' && 'Quốc tế'}
-                              {partner.type === 'association' && 'Hiệp hội'}
-                              {partner.type === 'transportation' && 'Nhà xe'}
-                              {partner.type === 'food_distribution' && 'Phát đồ ăn'}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-sm w-[230px]">
-                            {/* Website luôn hiển thị nếu có */}
-                            {partner.website && (
-                              <div className="mb-2">
-                                <a
-                                  href={partner.website}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline text-xs flex items-center gap-1 font-medium"
-                                >
-                                  <Globe className="h-3 w-3" />
-                                  Xem website
-                                </a>
-                              </div>
-                            )}
-                            {/* Nhà xe */}
-                            {partner.type === 'transportation' && (
-                              <div className="space-y-1 text-muted-foreground">
-                                {partner.details?.departure && partner.details?.destination && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <MapPin className="h-3 w-3" />
-                                    {partner.details.departure} → {partner.details.destination}
-                                  </div>
-                                )}
-                                {partner.details?.phone && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Phone className="h-3 w-3" /> {partner.details.phone}
-                                  </div>
-                                )}
-                                {partner.details?.schedule && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Clock className="h-3 w-3" /> {partner.details.schedule}
-                                  </div>
-                                )}
-                                {partner.details?.description && (
-                                  <p className="text-xs line-clamp-2">{partner.details.description}</p>
-                                )}
-                              </div>
-                            )}
-                            {/* Điểm phát đồ ăn */}
-                            {partner.type === 'food_distribution' && (
-                              <div className="space-y-1 text-muted-foreground">
-                                {partner.details?.location && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <MapPin className="h-3 w-3" /> {partner.details.location}
-                                  </div>
-                                )}
-                                {partner.details?.schedule && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Clock className="h-3 w-3" /> {partner.details.schedule}
-                                  </div>
-                                )}
-                                {partner.details?.organizer && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Users className="h-3 w-3" /> {partner.details.organizer}
-                                  </div>
-                                )}
-                                {partner.details?.description && (
-                                  <p className="text-xs line-clamp-2 mt-1">{partner.details.description}</p>
-                                )}
-                              </div>
-                            )}
-                            {/* Hospital, Charity, International Organization, Association */}
-                            {['hospital', 'charity', 'international_organization', 'association'].includes(partner.type) && (
-                              <div className="space-y-1 text-muted-foreground">
-                                {partner.details?.location && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <MapPin className="h-3 w-3" /> {partner.details.location}
-                                  </div>
-                                )}
-                                {partner.details?.phone && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Phone className="h-3 w-3" /> {partner.details.phone}
-                                  </div>
-                                )}
-                                {partner.details?.email && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Mail className="h-3 w-3" /> {partner.details.email}
-                                  </div>
-                                )}
-                                {partner.details?.activities?.length && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Users className="h-3 w-3" />
-                                    <span className="line-clamp-1">{partner.details.activities.join(', ')}</span>
-                                  </div>
-                                )}
-                                {partner.details?.description && (
-                                  <p className="text-xs line-clamp-2 mt-1">{partner.details.description}</p>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 w-[100px]">
-                            <Badge variant={partner.isActive ? 'default' : 'secondary'}>
-                              {partner.isActive ? 'Hoạt động' : 'Tạm dừng'}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-right space-x-2 w-[100px]">
-                            <Button size="sm" variant="ghost" onClick={() => handleEditPartner(partner)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => handleDeletePartner(partner._id)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                    return (
+                      <tr key={partner._id} className="hover:bg-muted/50 transition-colors">
+                        <td className="px-6 py-4 w-[50px]">
+                          {logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={partner.name}
+                              className="h-10 w-10 rounded-full object-contain bg-white p-1 shadow-sm"
+                              onError={(e) => {
+                                e.currentTarget.src = '/default-logo.png';
+                              }}
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-gray-200 border-2 border-dashed flex items-center justify-center">
+                              <ImageIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-1 py-4 font-medium w-[100px]">{partner.name}</td>
+                        <td className="px-3 py-4 w-[80px]">
+                          <Badge variant="secondary">
+                            {partner.type === 'hospital' && 'Bệnh viện'}
+                            {partner.type === 'charity' && 'Từ thiện'}
+                            {partner.type === 'international_organization' && 'Quốc tế'}
+                            {partner.type === 'association' && 'Hiệp hội'}
+                            {partner.type === 'transportation' && 'Nhà xe'}
+                            {partner.type === 'food_distribution' && 'Phát đồ ăn'}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-sm w-[230px]">
+                          {partner.website && (
+                            <div className="mb-2">
+                              <a
+                                href={partner.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline text-xs flex items-center gap-1 font-medium"
+                              >
+                                <Globe className="h-3 w-3" />
+                                Xem website
+                              </a>
+                            </div>
+                          )}
+                          {partner.type === 'transportation' && (
+                            <div className="space-y-1 text-muted-foreground">
+                              {partner.details?.departure && partner.details?.destination && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <MapPin className="h-3 w-3" />
+                                  {partner.details.departure} to {partner.details.destination}
+                                </div>
+                              )}
+                              {partner.details?.phone && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Phone className="h-3 w-3" /> {partner.details.phone}
+                                </div>
+                              )}
+                              {partner.details?.schedule && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Clock className="h-3 w-3" /> {partner.details.schedule}
+                                </div>
+                              )}
+                              {partner.details?.description && (
+                                <p className="text-xs line-clamp-2">{partner.details.description}</p>
+                              )}
+                            </div>
+                          )}
+                          {partner.type === 'food_distribution' && (
+                            <div className="space-y-1 text-muted-foreground">
+                              {partner.details?.location && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <MapPin className="h-3 w-3" /> {partner.details.location}
+                                </div>
+                              )}
+                              {partner.details?.schedule && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Clock className="h-3 w-3" /> {partner.details.schedule}
+                                </div>
+                              )}
+                              {partner.details?.organizer && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Users className="h-3 w-3" /> {partner.details.organizer}
+                                </div>
+                              )}
+                              {partner.details?.description && (
+                                <p className="text-xs line-clamp-2 mt-1">{partner.details.description}</p>
+                              )}
+                            </div>
+                          )}
+                          {['hospital', 'charity', 'international_organization', 'association'].includes(partner.type) && (
+                            <div className="space-y-1 text-muted-foreground">
+                              {partner.details?.location && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <MapPin className="h-3 w-3" /> {partner.details.location}
+                                </div>
+                              )}
+                              {partner.details?.phone && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Phone className="h-3 w-3" /> {partner.details.phone}
+                                </div>
+                              )}
+                              {partner.details?.email && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Mail className="h-3 w-3" /> {partner.details.email}
+                                </div>
+                              )}
+                              {partner.details?.activities?.length && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <Users className="h-3 w-3" />
+                                  <span className="line-clamp-1">{partner.details.activities.join(', ')}</span>
+                                </div>
+                              )}
+                              {partner.details?.description && (
+                                <p className="text-xs line-clamp-2 mt-1">{partner.details.description}</p>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 w-[100px]">
+                          <Badge variant={partner.isActive ? 'default' : 'secondary'}>
+                            {partner.isActive ? 'Hoạt động' : 'Tạm dừng'}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-right space-x-2 w-[100px]">
+                          <Button size="sm" variant="ghost" onClick={() => handleEditPartner(partner)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDeletePartner(partner._id)}>
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Hiển thị {(pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} trong {pagination.total} đối tác
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pagination.page === 1}
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm">
+                    Trang {pagination.page} / {pagination.totalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pagination.page === pagination.totalPages}
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
+
       <ScrollToTop />
       <ChatBubble />
     </motion.div>

@@ -4,128 +4,123 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { analyticsAPI, partnersAPI } from '@/lib/api'; // ĐÃ CÓ
+
+interface DashboardData {
+  keyMetrics: {
+    totalUsers: number;
+    totalDonations: number;
+    appointmentsThisMonth: number;
+    completionRate: number;
+  };
+  userDistribution: Array<{ role: string; count: number }>;
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
+  // 1. LẤY DỮ LIỆU CHÍNH TỪ /analytics/dashboard
+  const {
+    data: dashboardData,
+    isLoading: loadingMain,
+    error: mainError,
+  } = useQuery<DashboardData>({
+    queryKey: ['admin-dashboard'],
+    queryFn: () => analyticsAPI.getDashboard().then(res => res.data), // ĐÃ ĐÚNG
+  });
+
+  // 2. LẤY SỐ LƯỢNG TỔ CHỨC TỪ THIỆN
+  const {
+    data: partnersData,
+    isLoading: loadingPartners,
+  } = useQuery({
+    queryKey: ['partners-count'],
+    queryFn: () => partnersAPI.getAll({ limit: 1 }).then(res => res.data),
+  });
+
+  // Xử lý lỗi
+  if (mainError) toast.error('Không thể tải dữ liệu dashboard');
+
+  if (loadingMain) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-lg">Đang tải dữ liệu...</div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="text-center p-8 text-red-500">
+        Không có dữ liệu để hiển thị
+      </div>
+    );
+  }
+
+  const volunteerDoctors = dashboardData.userDistribution.find(u => u.role === 'Bác sĩ')?.count || 0;
+  const totalDonationsM = (dashboardData.keyMetrics.totalDonations / 1e6).toFixed(0);
+
   const stats = [
     {
       title: 'Tổng người dùng',
-      value: '2,847',
+      value: dashboardData.keyMetrics.totalUsers.toLocaleString(),
       change: '+12.5%',
-      changeType: 'increase',
       icon: Users,
       color: 'text-primary',
     },
     {
       title: 'Bác sĩ tình nguyện',
-      value: '156',
+      value: volunteerDoctors,
       change: '+8.2%',
-      changeType: 'increase',
       icon: Stethoscope,
       color: 'text-secondary',
     },
     {
       title: 'Quyên góp tháng này',
-      value: '125M VNĐ',
+      value: `${totalDonationsM}M VNĐ`,
       change: '+15.3%',
-      changeType: 'increase',
       icon: Gift,
       color: 'text-success',
     },
     {
       title: 'Tổ chức từ thiện',
-      value: '23',
+      value: loadingPartners ? '...' : (partnersData?.pagination?.total || 0),
       change: '+2',
-      changeType: 'increase',
       icon: Building2,
       color: 'text-warning',
     },
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'user',
-      message: '15 người dùng mới đăng ký hôm nay',
-      time: '2 giờ trước',
-      status: 'info',
-    },
-    {
-      id: 2,
-      type: 'donation',
-      message: 'Nhận được quyên góp 5M VNĐ từ tổ chức ABC',
-      time: '4 giờ trước',
-      status: 'success',
-    },
-    {
-      id: 3,
-      type: 'alert',
-      message: '3 yêu cầu hỗ trợ khẩn cấp cần duyệt',
-      time: '6 giờ trước',
-      status: 'warning',
-    },
-    {
-      id: 4,
-      type: 'system',
-      message: 'Hoàn thành backup dữ liệu hệ thống',
-      time: '1 ngày trước',
-      status: 'success',
-    },
-  ];
-
+  // ... phần còn lại giữ nguyên (pendingRequests, monthlyTargets, recentActivities, return JSX)
   const pendingRequests = [
-    {
-      type: 'Xác thực bác sĩ',
-      count: 8,
-      action: () => navigate('/doctors'),
-    },
-    {
-      type: 'Duyệt yêu cầu hỗ trợ',
-      count: 12,
-      action: () => navigate('/assistance'),
-    },
-    {
-      type: 'Xác minh bệnh nhân',
-      count: 5,
-      action: () => navigate('/patients'),
-    },
+    { type: 'Xác thực bác sĩ', count: 8, action: () => navigate('/doctors') },
+    { type: 'Duyệt yêu cầu hỗ trợ', count: 12, action: () => navigate('/assistance') },
+    { type: 'Xác minh bệnh nhân', count: 5, action: () => navigate('/patients') },
   ];
 
-  const monthlyTargets = [
-    {
-      title: 'Quyên góp',
-      current: 125,
-      target: 200,
-      unit: 'M VNĐ',
-    },
-    {
-      title: 'Bệnh nhân mới',
-      current: 348,
-      target: 500,
-      unit: 'người',
-    },
-    {
-      title: 'Bác sĩ tình nguyện',
-      current: 156,
-      target: 200,
-      unit: 'người',
-    },
+  const monthlyTargets = {
+    donations: { current: parseFloat(totalDonationsM), target: 200 },
+    newPatients: { current: 348, target: 500 },
+    volunteerDoctors: { current: volunteerDoctors, target: 200 },
+  };
+
+  const recentActivities = [
+    { message: `${dashboardData.keyMetrics.totalUsers} người dùng đang hoạt động`, time: 'Vừa xong', status: 'info' },
+    { message: `Nhận ${totalDonationsM}M VNĐ quyên góp tháng này`, time: '1 giờ trước', status: 'success' },
+    { message: `12 yêu cầu hỗ trợ cần duyệt`, time: '2 giờ trước', status: 'warning' },
+    { message: 'Hệ thống ổn định', time: '1 ngày trước', status: 'success' },
   ];
 
   return (
     <div className="space-y-8">
-      {/* Stats Overview */}
+      {/* Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
+        {stats.map((stat, i) => (
+          <motion.div key={stat.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <Card className="healthcare-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
@@ -140,36 +135,27 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* 3 cột + hoạt động */}
+      {/* ... giữ nguyên phần JSX còn lại */}
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Pending Requests */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
+        {/* Cần xử lý */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
           <Card className="healthcare-card">
             <CardHeader>
-              <CardTitle className="healthcare-heading flex items-center">
+              <CardTitle className="flex items-center">
                 <AlertCircle className="mr-2 h-5 w-5 text-warning" />
                 Cần xử lý
               </CardTitle>
-              <CardDescription>Các yêu cầu chờ phê duyệt</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {pendingRequests.map((request, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={request.action}
-                >
+              {pendingRequests.map((r, i) => (
+                <div key={i} className="flex justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={r.action}>
                   <div>
-                    <div className="font-medium">{request.type}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {request.count} yêu cầu
-                    </div>
+                    <div className="font-medium">{r.type}</div>
+                    <div className="text-sm text-muted-foreground">{r.count} yêu cầu</div>
                   </div>
                   <div className="bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                    {request.count}
+                    {r.count}
                   </div>
                 </div>
               ))}
@@ -177,35 +163,25 @@ export default function AdminDashboard() {
           </Card>
         </motion.div>
 
-        {/* Monthly Targets */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
+        {/* Mục tiêu */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           <Card className="healthcare-card">
-            <CardHeader>
-              <CardTitle className="healthcare-heading">Mục tiêu tháng này</CardTitle>
-              <CardDescription>Tiến độ hoàn thành các chỉ tiêu</CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>Mục tiêu tháng này</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-              {monthlyTargets.map((target, index) => {
-                const progress = (target.current / target.target) * 100;
+              {[
+                { title: 'Quyên góp', ...monthlyTargets.donations, unit: 'M VNĐ' },
+                { title: 'Bệnh nhân mới', ...monthlyTargets.newPatients, unit: 'người' },
+                { title: 'Bác sĩ tình nguyện', ...monthlyTargets.volunteerDoctors, unit: 'người' },
+              ].map((t, i) => {
+                const progress = (t.current / t.target) * 100;
                 return (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{target.title}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {target.current}/{target.target} {target.unit}
-                      </span>
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{t.title}</span>
+                      <span className="text-sm text-muted-foreground">{t.current}/{t.target} {t.unit}</span>
                     </div>
-                    <Progress 
-                      value={progress} 
-                      className="h-2"
-                    />
-                    <div className="text-xs text-muted-foreground">
-                      {progress.toFixed(1)}% hoàn thành
-                    </div>
+                    <Progress value={progress} className="h-2" />
+                    <div className="text-xs text-muted-foreground">{progress.toFixed(1)}% hoàn thành</div>
                   </div>
                 );
               })}
@@ -213,79 +189,40 @@ export default function AdminDashboard() {
           </Card>
         </motion.div>
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-        >
+        {/* Quản lý */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}>
           <Card className="healthcare-card">
-            <CardHeader>
-              <CardTitle className="healthcare-heading">Quản lý hệ thống</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Quản lý hệ thống</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <Button
-                className="w-full justify-start btn-healthcare"
-                onClick={() => navigate('/users')}
-              >
-                <Users className="mr-2 h-4 w-4" />
-                Quản lý người dùng
+              <Button className="w-full justify-start btn-healthcare" onClick={() => navigate('/users')}>
+                <Users className="mr-2 h-4 w-4" /> Quản lý người dùng
               </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => navigate('/charity')}
-              >
-                <Building2 className="mr-2 h-4 w-4" />
-                Tổ chức từ thiện
+              <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/partners')}>
+                <Building2 className="mr-2 h-4 w-4" /> Tổ chức từ thiện
               </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => navigate('/donations')}
-              >
-                <Gift className="mr-2 h-4 w-4" />
-                Quản lý quyên góp
+              <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/donations')}>
+                <Gift className="mr-2 h-4 w-4" /> Quản lý quyên góp
               </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => navigate('/analytics')}
-              >
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Thống kê & Báo cáo
+              <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/analytics')}>
+                <TrendingUp className="mr-2 h-4 w-4" /> Thống kê & Báo cáo
               </Button>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Recent Activities */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.8 }}
-      >
+      {/* Hoạt động gần đây */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
         <Card className="healthcare-card">
-          <CardHeader>
-            <CardTitle className="healthcare-heading">Hoạt động gần đây</CardTitle>
-            <CardDescription>Các sự kiện và thay đổi mới nhất trong hệ thống</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>Hoạt động gần đây</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start space-x-3 p-3 rounded-lg border"
-                >
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.status === 'success' ? 'bg-success' :
-                    activity.status === 'warning' ? 'bg-warning' :
-                    activity.status === 'info' ? 'bg-primary' : 'bg-muted-foreground'
-                  }`} />
+              {recentActivities.map((a, i) => (
+                <div key={i} className="flex items-start space-x-3 p-3 rounded-lg border">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${a.status === 'success' ? 'bg-success' : a.status === 'warning' ? 'bg-warning' : 'bg-primary'}`} />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">{activity.message}</div>
-                    <div className="text-xs text-muted-foreground">{activity.time}</div>
+                    <div className="text-sm font-medium">{a.message}</div>
+                    <div className="text-xs text-muted-foreground">{a.time}</div>
                   </div>
                 </div>
               ))}

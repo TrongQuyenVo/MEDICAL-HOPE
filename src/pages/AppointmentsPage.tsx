@@ -17,8 +17,6 @@ export default function AppointmentsPage() {
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
 
-  // Log để kiểm tra VITE_API_URL
-  console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
 
   const fetchAppointments = async () => {
     try {
@@ -67,7 +65,6 @@ export default function AppointmentsPage() {
 
   const handleRejectAppointment = async (appointmentId) => {
     try {
-      console.log('Rejecting appointment ID:', appointmentId);
       await appointmentsAPI.updateStatus(appointmentId, { status: 'cancelled' });
       setAppointments((prev) =>
         prev.map((apt) =>
@@ -84,7 +81,6 @@ export default function AppointmentsPage() {
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
-      console.log('Cancelling appointment ID:', appointmentId);
       await appointmentsAPI.updateStatus(appointmentId, { status: 'cancelled' });
       setAppointments((prev) =>
         prev.map((apt) =>

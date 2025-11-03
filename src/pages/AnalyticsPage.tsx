@@ -7,57 +7,63 @@ import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ChatBubble from './ChatbotPage';
 import ScrollToTop from '@/components/layout/ScrollToTop';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { analyticsAPI } from '@/lib/api';
 
 export default function AnalyticsPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock analytics data
-  const monthlyGrowth = [
-    { month: 'T1', users: 120, donations: 45000000, appointments: 89 },
-    { month: 'T2', users: 150, donations: 52000000, appointments: 102 },
-    { month: 'T3', users: 180, donations: 61000000, appointments: 118 },
-    { month: 'T4', users: 210, donations: 58000000, appointments: 134 },
-    { month: 'T5', users: 240, donations: 67000000, appointments: 145 },
-    { month: 'T6', users: 280, donations: 75000000, appointments: 167 },
-    { month: 'T7', users: 320, donations: 83000000, appointments: 189 },
-    { month: 'T8', users: 350, donations: 91000000, appointments: 203 },
-    { month: 'T9', users: 380, donations: 87000000, appointments: 221 },
-    { month: 'T10', users: 420, donations: 95000000, appointments: 245 },
-    { month: 'T11', users: 450, donations: 102000000, appointments: 267 },
-    { month: 'T12', users: 480, donations: 108000000, appointments: 289 }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await analyticsAPI.getDashboard();
+        const apiData = res.data;
 
-  const userDistribution = [
-    { role: 'Bệnh nhân', count: 320, color: '#3b82f6' },
-    { role: 'Bác sĩ', count: 85, color: '#10b981' },
-    { role: 'Tình nguyện viên', count: 45, color: '#f59e0b' },
-    { role: 'Quản trị viên', count: 30, color: '#ef4444' }
-  ];
+        // Tính % cho donationCategories
+        const totalCat = apiData.donationCategories.reduce((sum: number, c: any) => sum + c.amount, 0);
+        apiData.donationCategories = apiData.donationCategories.map((c: any) => ({
+          ...c,
+          percentage: totalCat > 0 ? Math.round((c.amount / totalCat) * 100) : 0
+        }));
 
-  const donationCategories = [
-    { category: 'Điều trị y tế', amount: 450000000, percentage: 45 },
-    { category: 'Thuốc men', amount: 250000000, percentage: 25 },
-    { category: 'Thiết bị y tế', amount: 150000000, percentage: 15 },
-    { category: 'Hỗ trợ khẩn cấp', amount: 100000000, percentage: 10 },
-    { category: 'Khác', amount: 50000000, percentage: 5 }
-  ];
+        // Gộp dữ liệu tăng trưởng (thêm appointments nếu cần, hiện tại dùng 0)
+        const months = Array.from({ length: 12 }, (_, i) => `T${i + 1}`);
+        const monthlyGrowth = months.map((m, i) => {
+          const userItem = apiData.monthlyGrowth.find((d: any) => d.month === m) || { users: 0 };
+          const donationItem = apiData.monthlyDonations.find((d: any) => d.month === m) || { donations: 0 };
+          return {
+            month: m,
+            users: userItem.users,
+            donations: donationItem.donations,
+            appointments: 0 // Có thể tính thêm từ API nếu mở rộng
+          };
+        });
 
-  const weeklyAppointments = [
-    { day: 'T2', appointments: 45, completed: 42 },
-    { day: 'T3', appointments: 52, completed: 48 },
-    { day: 'T4', appointments: 38, completed: 35 },
-    { day: 'T5', appointments: 61, completed: 58 },
-    { day: 'T6', appointments: 49, completed: 46 },
-    { day: 'T7', appointments: 33, completed: 31 },
-    { day: 'CN', appointments: 28, completed: 26 }
-  ];
+        setData({
+          ...apiData,
+          monthlyGrowth,
+          keyMetrics: {
+            totalUsers: apiData.keyMetrics.totalUsers,
+            totalDonations: apiData.keyMetrics.totalDonations,
+            appointmentsThisMonth: apiData.keyMetrics.appointmentsThisMonth,
+            completionRate: apiData.keyMetrics.completionRate
+          }
+        });
+      } catch (error) {
+        toast.error('Không thể tải dữ liệu thống kê');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const topDoctors = [
-    { name: 'BS. Nguyễn Văn A', specialty: 'Tim mạch', appointments: 156, rating: 4.9 },
-    { name: 'BS. Trần Thị B', specialty: 'Nhi khoa', appointments: 134, rating: 4.8 },
-    { name: 'BS. Lê Văn C', specialty: 'Da liễu', appointments: 128, rating: 4.7 },
-    { name: 'BS. Phạm Thị D', specialty: 'Thần kinh', appointments: 112, rating: 4.6 }
-  ];
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="flex justify-center p-8">Đang tải dữ liệu...</div>;
+  if (!data) return <div className="text-center p-8 text-red-500">Không có dữ liệu</div>;
 
   return (
     <motion.div
@@ -79,10 +85,10 @@ export default function AnalyticsPage() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">480</div>
+            <div className="text-2xl font-bold text-primary">{data.keyMetrics.totalUsers}</div>
             <div className="flex items-center text-xs text-success mt-1">
               <TrendingUp className="mr-1 h-3 w-3" />
-              +12% so với tháng trước
+              +12% so với tháng trước {/* Có thể tính động nếu cần */}
             </div>
           </CardContent>
         </Card>
@@ -93,10 +99,10 @@ export default function AnalyticsPage() {
             <DollarSign className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">1.08B VNĐ</div>
+            <div className="text-2xl font-bold text-success">{(data.keyMetrics.totalDonations / 1e9).toFixed(2)}B VNĐ</div>
             <div className="flex items-center text-xs text-success mt-1">
               <TrendingUp className="mr-1 h-3 w-3" />
-              +8.5% so với tháng trước
+              +8.5% so với tháng trước {/* Có thể tính động */}
             </div>
           </CardContent>
         </Card>
@@ -107,10 +113,10 @@ export default function AnalyticsPage() {
             <CalendarDays className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">289</div>
+            <div className="text-2xl font-bold text-primary">{data.keyMetrics.appointmentsThisMonth}</div>
             <div className="flex items-center text-xs text-success mt-1">
               <TrendingUp className="mr-1 h-3 w-3" />
-              +15% so với tháng trước
+              +15% so với tháng trước {/* Có thể tính động */}
             </div>
           </CardContent>
         </Card>
@@ -121,10 +127,10 @@ export default function AnalyticsPage() {
             <Target className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">94.2%</div>
+            <div className="text-2xl font-bold text-success">{data.keyMetrics.completionRate}%</div>
             <div className="flex items-center text-xs text-success mt-1">
               <TrendingUp className="mr-1 h-3 w-3" />
-              +2.1% so với tháng trước
+              +2.1% so với tháng trước {/* Có thể tính động */}
             </div>
           </CardContent>
         </Card>
@@ -140,7 +146,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyGrowth}>
+              <AreaChart data={data.monthlyGrowth}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -167,7 +173,7 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={userDistribution}
+                  data={data.userDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -175,7 +181,7 @@ export default function AnalyticsPage() {
                   paddingAngle={5}
                   dataKey="count"
                 >
-                  {userDistribution.map((entry, index) => (
+                  {data.userDistribution.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -183,7 +189,7 @@ export default function AnalyticsPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="mt-4 space-y-2">
-              {userDistribution.map((item, index) => (
+              {data.userDistribution.map((item: any, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div
@@ -210,7 +216,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyGrowth}>
+              <LineChart data={data.monthlyGrowth}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -234,7 +240,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={weeklyAppointments}>
+              <BarChart data={data.weeklyAppointments}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
@@ -256,7 +262,7 @@ export default function AnalyticsPage() {
             <CardDescription>Thống kê theo mục đích sử dụng</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {donationCategories.map((category, index) => (
+            {data.donationCategories.map((category: any, index: number) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{category.category}</span>
@@ -280,7 +286,7 @@ export default function AnalyticsPage() {
             <CardDescription>Thống kê theo số lượng lịch hẹn</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {topDoctors.map((doctor, index) => (
+            {data.topDoctors.map((doctor: any, index: number) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
